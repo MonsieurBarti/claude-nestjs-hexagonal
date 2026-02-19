@@ -34,87 +34,114 @@ One-time bootstrap for a new NestJS hexagonal project. Run this before `/api-set
    rm -rf test/
    ```
 
-3. **Install production dependencies**
+3. **Enable strict TypeScript**
+   Edit `tsconfig.json` — replace the individual strict flags with `"strict": true` and add two additional checks:
+   ```json
+   {
+     "compilerOptions": {
+       "module": "commonjs",
+       "declaration": true,
+       "removeComments": true,
+       "emitDecoratorMetadata": true,
+       "experimentalDecorators": true,
+       "allowSyntheticDefaultImports": true,
+       "target": "ES2021",
+       "sourceMap": true,
+       "outDir": "./dist",
+       "baseUrl": "./",
+       "incremental": true,
+       "skipLibCheck": true,
+       "strict": true,
+       "noImplicitOverride": true,
+       "noUncheckedIndexedAccess": true,
+       "forceConsistentCasingInFileNames": true,
+       "noFallthroughCasesInSwitch": true
+     }
+   }
+   ```
+   > Replaces individual flags (`strictNullChecks`, `noImplicitAny`, `strictBindCallApply`) with the single `"strict": true` umbrella flag.
+
+4. **Install production dependencies**
    ```bash
    pnpm add @nestjs/cqrs @nestjs/platform-fastify fastify nestjs-pino pino-http pino-pretty zod @prisma/client @nestjs/swagger
    ```
 
-4. **Upgrade NestJS core packages to v11**
+5. **Upgrade NestJS core packages to v11**
    `nest new` may scaffold with NestJS v10 while `@nestjs/platform-fastify` installs v11. Align all packages to avoid type incompatibilities:
    ```bash
    pnpm add @nestjs/common@^11 @nestjs/core@^11
    pnpm add -D @nestjs/testing@^11
    ```
 
-5. **Install dev dependencies**
+6. **Install dev dependencies**
    ```bash
    pnpm add -D prisma vitest @faker-js/faker @vitest/coverage-v8 unplugin-swc @swc/core @biomejs/biome lefthook
    ```
 
-6. **Remove Jest, Express platform, ESLint, and Prettier**
+7. **Remove Jest, Express platform, ESLint, and Prettier**
    ```bash
    pnpm remove jest @types/jest ts-jest supertest @types/supertest @nestjs/platform-express eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint-config-prettier eslint-plugin-prettier prettier @nestjs/eslint-plugin
    ```
    > Unknown packages are silently skipped — safe to run regardless of which packages `nest new` installed.
 
-7. **Remove ESLint and Prettier config files**
+8. **Remove ESLint and Prettier config files**
    ```bash
    rm -f .eslintrc.js .eslintrc.json .prettierrc .prettierrc.json .prettierignore
    ```
 
-8. **Update `package.json` scripts and remove the Jest block**
+9. **Update `package.json` scripts and remove the Jest block**
    Load [references/package-json-updates.md](references/package-json-updates.md).
    Apply the changes exactly as described — replace `scripts`, remove the `jest` top-level block.
 
-9. **Create `vitest.config.ts`**
-   Load [references/vitest-config.md](references/vitest-config.md).
-   Create the file at the project root. This single file defines the SWC plugin, globals, coverage, and all three test projects (unit / integration / e2e) inline — no separate workspace file needed.
+10. **Create `vitest.config.ts`**
+    Load [references/vitest-config.md](references/vitest-config.md).
+    Create the file at the project root. This single file defines the SWC plugin, globals, coverage, and all three test projects (unit / integration / e2e) inline — no separate workspace file needed.
 
-10. **Create `biome.json`**
+11. **Create `biome.json`**
     Load [references/biome-config.md](references/biome-config.md).
     Create the file at the project root.
 
-11. **Create `lefthook.yml`**
+12. **Create `lefthook.yml`**
     Load [references/git-hooks.md](references/git-hooks.md).
     Create the file at the project root.
 
-12. **Install git hooks**
+13. **Install git hooks**
     ```bash
     pnpm lefthook install
     ```
 
-13. **Create project directories**
+14. **Create project directories**
     ```bash
     mkdir -p src/modules src/config
     ```
 
-14. **Create `src/config/env.ts`**
+15. **Create `src/config/env.ts`**
     Load [references/env-config.md](references/env-config.md).
     This is the project-specific env schema. The `validateEnv` helper it imports is created by `/api-setup-shared`.
 
-15. **Replace `src/main.ts`**
+16. **Replace `src/main.ts`**
     Load [references/main-ts.md](references/main-ts.md).
     Overwrite `src/main.ts` with the Fastify + pino + ZodPipe + env version.
     *(Imports from `src/shared/` will resolve once `/api-setup-shared` runs.)*
 
-16. **Replace `src/app.module.ts`**
+17. **Replace `src/app.module.ts`**
     Load [references/app-module.md](references/app-module.md).
     Overwrite `src/app.module.ts` with the clean version (no AppController, no AppService).
 
-17. **Initialize Prisma**
+18. **Initialize Prisma**
     ```bash
     pnpm prisma init
     ```
     This creates `prisma/schema.prisma` and `.env` with a `DATABASE_URL` placeholder.
 
-18. **Create `.claude/CLAUDE.md`**
+19. **Create `.claude/CLAUDE.md`**
     ```bash
     mkdir -p .claude
     ```
     Load [references/claude-md.md](references/claude-md.md).
     Create `.claude/CLAUDE.md`, substituting `{app-name}` with the actual project name.
 
-19. **Print next steps for the user**
+20. **Print next steps for the user**
     ```
     ✓ {app-name} scaffold is ready. Next:
 
