@@ -62,6 +62,8 @@ MODULE_ROOT: src/modules
 | Domain errors           | `extends BaseDomainError`, `reportToMonitoring: false` (user) or `true` (system) |
 | Commands                | `extends TypedCommand<void>` — never return data                                 |
 | Queries                 | `extends TypedQuery<TResult>` — no side effects                                  |
+| No `as any`             | Use `z.infer<>`, generics, `unknown` + narrowing, or `as unknown as T` (last resort, with comment) |
+| No `enum`               | Use `z.enum([...])` — derive type with `z.infer<>`, access values via `.Values`  |
 
 ## Available skills
 
@@ -76,6 +78,7 @@ MODULE_ROOT: src/modules
 
 Per-layer constraints auto-load when editing matching files — links for quick access:
 
+- [api-typing](rules/api-typing.md) — `**/*.ts` global typing conventions (no `as any`, no `enum`)
 - [api-cqrs-shared](rules/api-cqrs-shared.md) — `*.command.ts` + `*.query.ts` shared invariants
 - [api-command](rules/api-command.md) — `*.command.ts`
 - [api-query](rules/api-query.md) — `*.query.ts`
