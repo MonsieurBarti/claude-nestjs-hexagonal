@@ -4,7 +4,7 @@ File: `src/main.ts`
 
 ```ts
 import { NestFactory } from "@nestjs/core";
-import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
+import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";

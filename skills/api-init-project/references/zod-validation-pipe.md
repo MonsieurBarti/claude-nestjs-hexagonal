@@ -45,10 +45,10 @@ export function ZodSchema(schema: z.ZodTypeAny): ClassDecorator {
 ## File 3: `src/shared/pipes/zod-validation.pipe.ts`
 
 ```ts
-import { ArgumentMetadata, Injectable, PipeTransform, Type } from "@nestjs/common";
+import { type ArgumentMetadata, Injectable, type PipeTransform, type Type } from "@nestjs/common";
 import { z } from "zod";
-import { CustomZodValidationException } from "./custom-zod-validation.exception";
 import { ZOD_SCHEMA_KEY } from "../decorators/zod-schema.decorator";
+import { CustomZodValidationException } from "./custom-zod-validation.exception";
 
 /**
  * Zod validation pipe — two modes:

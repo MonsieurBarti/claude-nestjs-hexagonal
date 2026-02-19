@@ -6,9 +6,13 @@ Replaces ESLint + Prettier. Handles linting, formatting, and import sorting in a
 
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "organizeImports": {
-    "enabled": true
+  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
@@ -37,21 +41,18 @@ Replaces ESLint + Prettier. Handles linting, formatting, and import sorting in a
     }
   },
   "files": {
-    "ignore": [
-      "dist/**",
-      "node_modules/**",
-      "prisma/migrations/**"
-    ]
+    "includes": ["**", "!dist/**", "!prisma/migrations/**"]
   }
 }
 ```
 
 ## Notes
 
+- **Biome v2+**: `organizeImports` moved to `assist.actions.source.organizeImports: "on"` (the old top-level `organizeImports` key and `files.ignore` were removed in v2).
 - `recommended: true` enables the full set of Biome's recommended lint rules for TypeScript and JavaScript.
 - `noNonNullAssertion: "warn"` instead of `"error"` — NestJS DI occasionally requires `!` (e.g. `@InjectRepository()` or optional chaining patterns); error-level would be too noisy out of the box.
 - `lineWidth: 100` — wider than Prettier's default 80; common in NestJS/TypeScript projects.
-- `organizeImports: true` — import statements are sorted and deduplicated on every `biome check --write` or `biome format --write` run.
+- `organizeImports: "on"` — import statements are sorted and deduplicated on every `biome check --write` or `biome format --write` run.
 - `quoteStyle: "double"` — matches the TypeScript community convention (and NestJS's own codebase).
-- `$schema` pins the version for editor autocompletion. Update the version number if you install a newer Biome, or omit the version pin (`"https://biomejs.dev/schemas/schema.json"`) for always-latest.
-- Add project-specific paths to `files.ignore` as needed (e.g. `"coverage/**"`, generated client code).
+- `$schema` version: update to match your installed Biome version (run `pnpm biome --version`). The `2.0.0` schema is compatible with all Biome v2.x releases.
+- `files.includes` uses negation patterns (`!dist/**`) to exclude paths — replaces the old `files.ignore` array.

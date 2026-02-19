@@ -39,33 +39,36 @@ One-time bootstrap for a new NestJS hexagonal project. Run this before `/api-set
    pnpm add @nestjs/cqrs @nestjs/platform-fastify fastify nestjs-pino pino-http pino-pretty zod @prisma/client @nestjs/swagger
    ```
 
-4. **Install dev dependencies**
+4. **Upgrade NestJS core packages to v11**
+   `nest new` may scaffold with NestJS v10 while `@nestjs/platform-fastify` installs v11. Align all packages to avoid type incompatibilities:
+   ```bash
+   pnpm add @nestjs/common@^11 @nestjs/core@^11
+   pnpm add -D @nestjs/testing@^11
+   ```
+
+5. **Install dev dependencies**
    ```bash
    pnpm add -D prisma vitest @faker-js/faker @vitest/coverage-v8 unplugin-swc @swc/core @biomejs/biome lefthook
    ```
 
-5. **Remove Jest, Express platform, ESLint, and Prettier**
+6. **Remove Jest, Express platform, ESLint, and Prettier**
    ```bash
    pnpm remove jest @types/jest ts-jest supertest @types/supertest @nestjs/platform-express eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint-config-prettier eslint-plugin-prettier prettier @nestjs/eslint-plugin
    ```
    > Unknown packages are silently skipped — safe to run regardless of which packages `nest new` installed.
 
-6. **Remove ESLint and Prettier config files**
+7. **Remove ESLint and Prettier config files**
    ```bash
    rm -f .eslintrc.js .eslintrc.json .prettierrc .prettierrc.json .prettierignore
    ```
 
-7. **Update `package.json` scripts and remove the Jest block**
+8. **Update `package.json` scripts and remove the Jest block**
    Load [references/package-json-updates.md](references/package-json-updates.md).
    Apply the changes exactly as described — replace `scripts`, remove the `jest` top-level block.
 
-8. **Create `vitest.config.ts`**
+9. **Create `vitest.config.ts`**
    Load [references/vitest-config.md](references/vitest-config.md).
-   Create the file at the project root.
-
-9. **Create `vitest.workspace.ts`**
-   Load [references/vitest-workspace.md](references/vitest-workspace.md).
-   Create the file at the project root.
+   Create the file at the project root. This single file defines the SWC plugin, globals, coverage, and all three test projects (unit / integration / e2e) inline — no separate workspace file needed.
 
 10. **Create `biome.json`**
     Load [references/biome-config.md](references/biome-config.md).
