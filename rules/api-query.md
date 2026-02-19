@@ -6,71 +6,47 @@ globs:
 
 # Rules — CQRS Queries
 
-Applies to every `*.query.ts` file in a NestJS hexagonal module.
+Applies to every `*.query.ts` file. Shared CQRS invariants (props naming, correlationId, super(), execute destructuring, handler colocation, no buses, no try-catch, logger pattern) are in `api-cqrs-shared`.
 
-## File structure (query + handler in the SAME file)
+## Query-specific rules
+
+- **`extends TypedQuery<TResult>`** — the return type must be explicit and precise
+- **`@Injectable()`** — required decorator on the query handler
+- **No side effects** — queries read only, they never mutate state
+- **Return domain entities** — the controller is responsible for mapping to DTOs
+
+## Prohibited
+
+- **No writes** to the database or state mutation in a query handler
+- **No DTO transformation** in the handler — return domain entities directly
+
+## File structure
 
 ```ts
-// Props type
 export type XxxQueryProps = {
   // business fields...
-  correlationId: string; // REQUIRED
+  correlationId: string;
 };
 
-// Explicit return type
 export type XxxQueryResult = SomeDomainType | SomeDomainType[] | null;
 
-// Query class
 export class XxxQuery extends TypedQuery<XxxQueryResult> {
   constructor(public readonly props: XxxQueryProps) {
-    super(); // REQUIRED
+    super();
   }
 }
 
-// Handler in the same file
 @QueryHandler(XxxQuery)
-@Injectable() // REQUIRED on query handlers
+@Injectable()
 export class XxxQueryHandler implements IQueryHandler<XxxQuery, XxxQueryResult> {
-  constructor(
-    @Inject(MODULE_TOKENS.SOME_REPOSITORY)
-    private readonly someRepository: ISomeRepository,
-  ) {}
-
   async execute({ props }: XxxQuery): Promise<XxxQueryResult> {
-    const { correlationId } = props;
-    const result = await this.someRepository.findById(props.id);
-    if (!result) {
-      throw new XxxNotFoundError({ correlationId, id: props.id });
-    }
     return result; // Return domain entity — controller transforms to DTO
   }
 }
 ```
 
-## Mandatory rules
-
-- **`extends TypedQuery<TResult>`** — the return type must be explicit and precise
-- **`props` required** — never `payload`, `data`, or any other name
-- **`correlationId: string`** — required field in `XxxQueryProps`
-- **`super()`** — required in the constructor
-- **`@Injectable()`** — required decorator on the query handler
-- **Handler in the same file** — no separate `*.query.handler.ts` file
-- **No side effects** — queries read only, they never mutate state
-- **`execute({ props }: XxxQuery)`** — destructure props in the signature
-- **Return domain entities** — the controller is responsible for mapping to DTOs
-
-## Prohibited
-
-- **No `CommandBus` or `QueryBus` injected** in a query handler
-- **No writes** to the database or state mutation in a query handler
-- **No `try-catch` just for logging**
-- **No DTO transformation** in the handler — return domain entities directly
-
 ## Registration
 
-Export the handler in the `queryHandlers` array in `application/{module}.module.ts`:
 ```ts
-export const queryHandlers = [
-  XxxQueryHandler,
-];
+export const queryHandlers = [XxxQueryHandler];
 ```

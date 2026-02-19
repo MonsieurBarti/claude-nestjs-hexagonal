@@ -25,9 +25,9 @@ for f in "$PLUGIN_DIR/rules/"*.md; do
 done
 
 echo "Linking skills..."
-for f in "$PLUGIN_DIR/skills/"*.md; do
-  name="$(basename "$f")"
-  ln -sf "$f" "$SKILLS_DIR/$name"
+for d in "$PLUGIN_DIR/skills/"/*/; do
+  name="$(basename "$d")"
+  ln -sfn "$d" "$SKILLS_DIR/$name"
   echo "  .claude/skills/$name"
 done
 

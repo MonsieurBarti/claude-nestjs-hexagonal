@@ -17,6 +17,7 @@ Applies to every file under `**/presentation/`.
 - **Logger child** — create in constructor with context (`moduleName`, `className`)
 
 ```ts
+@ApiTags("xxx")
 @Controller({ version: "1", path: "xxx" })
 export class XxxController {
   private readonly logger: BaseLogger;
@@ -33,6 +34,10 @@ export class XxxController {
   }
 
   @Get("/:id")
+  @ApiOperation({ summary: "Get an xxx by ID" })
+  @ApiParam({ name: "id", type: String, description: "Xxx identifier" })
+  @ApiResponse({ status: 200, description: "Found", type: XxxResponseDto })
+  @ApiResponse({ status: 404, description: "Not found", type: ErrorResponseDto })
   async getById(
     @Param() params: GetXxxParamsDto,
     @CorrelationId() correlationId: string, // REQUIRED
@@ -41,6 +46,19 @@ export class XxxController {
       new GetXxxQuery({ id: params.id, correlationId }),
     );
     return { id: entity.id, name: entity.name }; // map domain → DTO here
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: "Create an xxx" })
+  @ApiBody({ type: CreateXxxBodyDto })
+  @ApiResponse({ status: 204, description: "Created successfully" })
+  @ApiResponse({ status: 422, description: "Validation error", type: ErrorResponseDto })
+  async create(
+    @Body() body: CreateXxxBodyDto,
+    @CorrelationId() correlationId: string,
+  ): Promise<void> {
+    await this.commandBus.execute(new CreateXxxCommand({ ...body, correlationId }));
   }
 }
 ```
@@ -89,6 +107,53 @@ export class XxxExceptionFilter extends BaseFeatureExceptionFilter<XxxBaseError>
 - **Simple types** on response DTOs (no domain entities)
 - **Clear naming**: `XxxBodyDto`, `XxxParamsDto`, `XxxQueryDto`, `XxxResponseDto`
 
+## OpenAPI
+
+### Controller class
+
+- **`@ApiTags('xxx')`** — required on every controller class; groups endpoints in the Swagger UI
+
+### Endpoint methods
+
+| Decorator | When required |
+|-----------|--------------|
+| `@ApiOperation({ summary })` | Every public endpoint — one-line human description |
+| `@ApiResponse({ status, description, type })` | Every possible HTTP status the endpoint can return |
+| `@ApiBody({ type: XxxBodyDto })` | Every `@Body()` parameter (NestJS may not infer it with custom pipes) |
+| `@ApiParam({ name, type, description })` | Every `@Param()` path parameter |
+| `@ApiQuery({ name, type, required, description })` | Every `@Query()` query parameter |
+
+**Response types:**
+- Success (2xx): `type` is the response DTO class (e.g. `type: XxxResponseDto`)
+- Void commands: `@HttpCode(HttpStatus.NO_CONTENT)` + `@ApiResponse({ status: 204 })` (no `type`)
+- All errors: `type: ErrorResponseDto` imported from `{SHARED_ROOT}/errors/base-feature-exception.filter`
+
+### DTO properties
+
+- **`@ApiProperty({ description, example })`** — required on every public property of every DTO class
+- Request DTOs: keep `@ZodSchema(...)` on the class for validation; add `@ApiProperty()` per property for Swagger
+- Response DTOs: plain class with `@ApiProperty()` — no Zod schema needed
+
+```ts
+// Request DTO
+const CreateXxxBodySchema = z.object({ name: z.string().min(1).max(100) });
+
+@ZodSchema(CreateXxxBodySchema)
+export class CreateXxxBodyDto {
+  @ApiProperty({ example: "My xxx", description: "Display name", minLength: 1, maxLength: 100 })
+  name: string;
+}
+
+// Response DTO
+export class XxxResponseDto {
+  @ApiProperty({ example: "550e8400-e29b-41d4-a716-446655440000" })
+  id: string;
+
+  @ApiProperty({ example: "My xxx" })
+  name: string;
+}
+```
+
 ## Prohibited
 
 - **No business logic** in controllers
@@ -96,3 +161,5 @@ export class XxxExceptionFilter extends BaseFeatureExceptionFilter<XxxBaseError>
 - **No `try-catch`** for error handling (the exception filter handles it)
 - **No domain entities** returned directly in the HTTP response
 - **No native NestJS `CommandBus`/`QueryBus`** (use typed wrappers)
+- **No public endpoint without `@ApiOperation`**
+- **No `@ApiResponse` `type` pointing to a domain entity** — use response DTOs only
