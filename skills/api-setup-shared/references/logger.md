@@ -126,25 +126,88 @@ export class InMemoryLogger extends BaseLogger {
 }
 ```
 
+## logger.config.ts — pino config factory
+
+```ts
+import pino from "pino";
+import type { Params } from "nestjs-pino";
+import type { ConfigService } from "@nestjs/config";
+import type { EnvVars } from "../../config/env";
+
+const requestSerializer = pino.stdSerializers.req;
+const responseSerializer = pino.stdSerializers.res;
+
+export const getLoggerConfig = (configService: ConfigService<EnvVars, true>): Params => {
+  const isLocal = configService.get("IS_LOCAL", { infer: true });
+
+  return {
+    pinoHttp: {
+      serializers: {
+        err: pino.stdSerializers.err,
+        req: requestSerializer,
+        res: responseSerializer,
+      },
+      autoLogging: false,
+      wrapSerializers: true,
+      level: isLocal ? "debug" : "info",
+      transport: isLocal
+        ? {
+            target: "pino-pretty",
+            options: {
+              colorize: true,
+              colorizeObjects: false,
+              singleLine: true,
+              translateTime: "SYS:HH:MM:ss",
+              messageFormat: "{msg}",
+            },
+          }
+        : undefined,
+      customLogLevel: (_req, res, err) => {
+        if (isLocal) return "silent";
+        if (res.statusCode >= 400 && res.statusCode < 500) return "warn";
+        else if (res.statusCode >= 500 || err) return "error";
+        else if (res.statusCode >= 300 && res.statusCode < 400) return "silent";
+        return "info";
+      },
+      customSuccessMessage: (req, res) => {
+        if (res.statusCode === 404) return "resource not found";
+        return `${req.method} completed`;
+      },
+      customReceivedMessage: (_req, _res) => "request received",
+      customErrorMessage: (_req, _res, _err) =>
+        `request errored with status code: ${_res.statusCode}`,
+      customAttributeKeys: {
+        req: "request",
+        res: "response",
+        err: "error",
+        responseTime: "timeTaken",
+      },
+    },
+  };
+};
+```
+
 ## app-logger.module.ts — global NestJS module
+
+Uses `LoggerModule.forRootAsync` so pino config can read from `ConfigService` (requires `ConfigModule.forRoot` in `AppModule`).
 
 ```ts
 import { Global, Module } from "@nestjs/common";
 import { LoggerModule, PinoLogger } from "nestjs-pino";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AppLogger } from "./pino-logger";
 import { LOGGER_TOKEN } from "./inject-logger.decorator";
+import { getLoggerConfig } from "./logger.config";
+import type { EnvVars } from "../../config/env";
 
 @Global()
 @Module({
   imports: [
-    LoggerModule.forRoot({
-      pinoHttp: {
-        level: process.env.LOG_LEVEL ?? "info",
-        transport:
-          process.env.NODE_ENV !== "production"
-            ? { target: "pino-pretty" }
-            : undefined,
-      },
+    LoggerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<EnvVars, true>) =>
+        getLoggerConfig(configService),
     }),
   ],
   providers: [
@@ -159,7 +222,31 @@ import { LOGGER_TOKEN } from "./inject-logger.decorator";
 export class AppLoggerModule {}
 ```
 
-Import `AppLoggerModule` in the application root module.
+Import `AppLoggerModule` in the application root module **after** `ConfigModule.forRoot`.
+
+## test-logger.module.ts — shared test helper
+
+File: `{SHARED_ROOT}/testing/test-logger.module.ts`
+
+Provides `LOGGER_TOKEN` globally for integration tests without booting the full `AppLoggerModule` + pino stack.
+
+```ts
+import { Global, Module } from "@nestjs/common";
+import { LOGGER_TOKEN } from "../logger/inject-logger.decorator";
+import { InMemoryLogger } from "../logger/in-memory-logger";
+
+@Global()
+@Module({
+  providers: [{ provide: LOGGER_TOKEN, useValue: new InMemoryLogger() }],
+  exports: [LOGGER_TOKEN],
+})
+export class TestLoggerModule {}
+```
+
+Import it before the feature module in every integration test:
+```ts
+imports: [TestLoggerModule, XxxModule]
+```
 
 ## Barrel — logger/index.ts
 

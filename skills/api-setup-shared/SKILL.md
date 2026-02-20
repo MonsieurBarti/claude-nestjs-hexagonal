@@ -32,8 +32,10 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 4. **BaseFeatureExceptionFilter** — `{SHARED_ROOT}/errors/base-feature-exception.filter.ts`
    Load [references/base-feature-exception-filter.md](references/base-feature-exception-filter.md).
 
-5. **Logger stack** (5 files + module) — `{SHARED_ROOT}/logger/`
+5. **Logger stack** (6 files + module + test helper) — `{SHARED_ROOT}/logger/` and `{SHARED_ROOT}/testing/`
    Load [references/logger.md](references/logger.md) for all logger files.
+   This includes: `logger.ts`, `pino-logger.ts`, `inject-logger.decorator.ts`, `in-memory-logger.ts`, `logger.config.ts`, `app-logger.module.ts`.
+   Also create `{SHARED_ROOT}/testing/test-logger.module.ts` (shared `@Global()` test module — see logger.md).
 
 6. **Zod validation** (pipe + exception + decorator) — `{SHARED_ROOT}/pipes/` and `{SHARED_ROOT}/decorators/`
    Load [references/zod-validation-pipe.md](references/zod-validation-pipe.md).
@@ -92,7 +94,9 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 
 ## Limitations
 
-- `AppLoggerModule` requires `nestjs-pino` and `pino-http` — installed by `/api-init-project`.
+- `AppLoggerModule` requires `nestjs-pino`, `pino-http`, and `@nestjs/config` — installed by `/api-init-project`.
+- `getLoggerConfig` uses `ConfigService<EnvVars, true>` — requires `ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnvironment })` in `AppModule` (added by step 13).
+- `TestLoggerModule` (in `{SHARED_ROOT}/testing/`) bypasses pino entirely — safe for integration tests without ConfigModule.
 - For non-pino loggers, replace `AppLogger` with a custom `BaseLogger` implementation.
 - `BaseFeatureExceptionFilter` uses Fastify types (`FastifyRequest`, `FastifyReply`) — requires `@nestjs/platform-fastify`.
 - `validateEnv` is a helper only — the project-specific env schema lives in `src/config/env.ts`, created by `/api-init-project`.

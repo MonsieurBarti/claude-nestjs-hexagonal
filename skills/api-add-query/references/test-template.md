@@ -17,7 +17,7 @@ File: `application/queries/{query-name}/{query-name}.query.spec.ts`
 // Integration test — requires Docker (Testcontainers)
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { type INestApplication, Global, Module } from "@nestjs/common";
+import { type INestApplication } from "@nestjs/common";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -26,17 +26,7 @@ import request from "supertest";
 import { execSync } from "node:child_process";
 import { PrismaService } from "{SHARED_ROOT}/prisma/prisma.service";
 import { XxxModule } from "../../{module}.module"; // feature module imports PrismaModule
-import { LOGGER_TOKEN } from "{SHARED_ROOT}/logger/inject-logger.decorator";
-import { InMemoryLogger } from "{SHARED_ROOT}/logger/in-memory-logger";
-
-// @Global() makes LOGGER_TOKEN visible to all nested modules (e.g. XxxExceptionFilter)
-// overrideProvider() cannot replace a token that was never registered in the test graph
-@Global()
-@Module({
-  providers: [{ provide: LOGGER_TOKEN, useValue: new InMemoryLogger() }],
-  exports: [LOGGER_TOKEN],
-})
-class TestLoggerModule {}
+import { TestLoggerModule } from "{SHARED_ROOT}/testing/test-logger.module";
 
 describe("GET /xxx/:id (integration)", () => {
   let container: StartedPostgreSqlContainer;
@@ -97,7 +87,7 @@ describe("GET /xxx/:id (integration)", () => {
 // Integration test — requires Docker (Testcontainers)
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { type INestApplication, Global, Module } from "@nestjs/common";
+import { type INestApplication } from "@nestjs/common";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -107,17 +97,7 @@ import { execSync } from "node:child_process";
 import { PrismaService } from "{SHARED_ROOT}/prisma/prisma.service";
 import { XxxModule } from "../../{module}.module";
 import { ListXxxQuery } from "./list-{name}.query";
-import { LOGGER_TOKEN } from "{SHARED_ROOT}/logger/inject-logger.decorator";
-import { InMemoryLogger } from "{SHARED_ROOT}/logger/in-memory-logger";
-
-// @Global() makes LOGGER_TOKEN visible to all nested modules (e.g. XxxExceptionFilter)
-// overrideProvider() cannot replace a token that was never registered in the test graph
-@Global()
-@Module({
-  providers: [{ provide: LOGGER_TOKEN, useValue: new InMemoryLogger() }],
-  exports: [LOGGER_TOKEN],
-})
-class TestLoggerModule {}
+import { TestLoggerModule } from "{SHARED_ROOT}/testing/test-logger.module";
 
 describe("GET /xxx (paginated integration)", () => {
   let container: StartedPostgreSqlContainer;
