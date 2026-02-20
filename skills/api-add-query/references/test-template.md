@@ -17,7 +17,7 @@ File: `application/queries/{query-name}/{query-name}.query.spec.ts`
 // Integration test — requires Docker (Testcontainers)
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { type INestApplication } from "@nestjs/common";
+import { type INestApplication, Global, Module } from "@nestjs/common";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -28,6 +28,15 @@ import { PrismaService } from "{SHARED_ROOT}/prisma/prisma.service";
 import { XxxModule } from "../../{module}.module"; // feature module imports PrismaModule
 import { LOGGER_TOKEN } from "{SHARED_ROOT}/logger/inject-logger.decorator";
 import { InMemoryLogger } from "{SHARED_ROOT}/logger/in-memory-logger";
+
+// @Global() makes LOGGER_TOKEN visible to all nested modules (e.g. XxxExceptionFilter)
+// overrideProvider() cannot replace a token that was never registered in the test graph
+@Global()
+@Module({
+  providers: [{ provide: LOGGER_TOKEN, useValue: new InMemoryLogger() }],
+  exports: [LOGGER_TOKEN],
+})
+class TestLoggerModule {}
 
 describe("GET /xxx/:id (integration)", () => {
   let container: StartedPostgreSqlContainer;
@@ -41,11 +50,8 @@ describe("GET /xxx/:id (integration)", () => {
     execSync("npx prisma migrate deploy", { stdio: "inherit" });
 
     const module: TestingModule = await Test.createTestingModule({
-      imports: [XxxModule], // XxxModule imports PrismaModule in its own imports array
-    })
-      .overrideProvider(LOGGER_TOKEN)
-      .useValue(new InMemoryLogger())
-      .compile();
+      imports: [TestLoggerModule, XxxModule], // XxxModule imports PrismaModule in its own imports array
+    }).compile();
 
     app = module.createNestApplication();
     await app.init();
@@ -91,7 +97,7 @@ describe("GET /xxx/:id (integration)", () => {
 // Integration test — requires Docker (Testcontainers)
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { type INestApplication } from "@nestjs/common";
+import { type INestApplication, Global, Module } from "@nestjs/common";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -103,6 +109,15 @@ import { XxxModule } from "../../{module}.module";
 import { ListXxxQuery } from "./list-{name}.query";
 import { LOGGER_TOKEN } from "{SHARED_ROOT}/logger/inject-logger.decorator";
 import { InMemoryLogger } from "{SHARED_ROOT}/logger/in-memory-logger";
+
+// @Global() makes LOGGER_TOKEN visible to all nested modules (e.g. XxxExceptionFilter)
+// overrideProvider() cannot replace a token that was never registered in the test graph
+@Global()
+@Module({
+  providers: [{ provide: LOGGER_TOKEN, useValue: new InMemoryLogger() }],
+  exports: [LOGGER_TOKEN],
+})
+class TestLoggerModule {}
 
 describe("GET /xxx (paginated integration)", () => {
   let container: StartedPostgreSqlContainer;
@@ -116,11 +131,8 @@ describe("GET /xxx (paginated integration)", () => {
     execSync("npx prisma migrate deploy", { stdio: "inherit" });
 
     const module: TestingModule = await Test.createTestingModule({
-      imports: [XxxModule], // XxxModule imports PrismaModule in its own imports array
-    })
-      .overrideProvider(LOGGER_TOKEN)
-      .useValue(new InMemoryLogger())
-      .compile();
+      imports: [TestLoggerModule, XxxModule], // XxxModule imports PrismaModule in its own imports array
+    }).compile();
 
     app = module.createNestApplication();
     await app.init();
