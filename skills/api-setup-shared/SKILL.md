@@ -1,9 +1,10 @@
 ---
 name: api-setup-shared
 description: Creates all shared infrastructure required for hexagonal NestJS modules —
-  TypedCommand, TypedQuery, BaseDomainError, BaseFeatureExceptionFilter, the BaseLogger
-  pattern (wrapping nestjs-pino), ZodValidationPipe with @ZodSchema decorator, and
-  the validateEnv helper. Run once per project before using other api-* skills.
+  TypedCommand, TypedQuery, PaginatedQueryBase, BaseDomainError, BaseFeatureExceptionFilter,
+  the BaseLogger pattern (wrapping nestjs-pino), ZodValidationPipe with @ZodSchema decorator,
+  PrismaService + PrismaModule (global), and the validateEnv helper. Run once per project
+  before using other api-* skills.
 ---
 
 # api-setup-shared
@@ -20,8 +21,9 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 1. **TypedCommand** — `{SHARED_ROOT}/cqrs/typed-command.ts`
    Load [references/typed-command.md](references/typed-command.md).
 
-2. **TypedQuery** — `{SHARED_ROOT}/cqrs/typed-query.ts`
+2. **TypedQuery + PaginatedQueryBase** — `{SHARED_ROOT}/cqrs/typed-query.ts` and `{SHARED_ROOT}/cqrs/paginated-query.base.ts`
    Load [references/typed-query.md](references/typed-query.md).
+   Creates `TypedQuery`, `PaginatedQueryBase`, `PaginatedParams`, `PaginatedResult`, and updates the barrel (see Step 1).
 
 3. **BaseDomainError** — `{SHARED_ROOT}/errors/base-domain.error.ts`
    Load [references/base-domain-error.md](references/base-domain-error.md).
@@ -39,25 +41,30 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 7. **Env validation helper** — `{SHARED_ROOT}/config/validate-env.ts`
    Load [references/validate-env.md](references/validate-env.md).
 
-8. **Barrel exports** — `{SHARED_ROOT}/cqrs/index.ts`, `errors/index.ts`, `logger/index.ts`
+8. **PrismaService + PrismaModule** — `{SHARED_ROOT}/prisma/prisma.service.ts` and `{SHARED_ROOT}/prisma/prisma.module.ts`
+   Load [references/prisma.md](references/prisma.md).
+
+9. **Barrel exports** — `{SHARED_ROOT}/cqrs/index.ts`, `errors/index.ts`, `logger/index.ts`
    Included in the respective reference files (steps 1–5).
    Steps 6 and 7 include their own barrel exports.
 
-9. **Update `src/app.module.ts`**
-   Add `AppLoggerModule` to the `imports` array:
-   ```ts
-   import { AppLoggerModule } from "./shared/logger/app-logger.module";
+10. **Update `src/app.module.ts`**
+    Add `AppLoggerModule` and `PrismaModule` to the `imports` array:
+    ```ts
+    import { AppLoggerModule } from "./shared/logger/app-logger.module";
+    import { PrismaModule } from "./shared/prisma/prisma.module";
 
-   @Module({
-     imports: [
-       LoggerModule.forRoot({ ... }),
-       AppLoggerModule,
-     ],
-   })
-   export class AppModule {}
-   ```
+    @Module({
+      imports: [
+        LoggerModule.forRoot({ ... }),
+        AppLoggerModule,
+        PrismaModule,
+      ],
+    })
+    export class AppModule {}
+    ```
 
-10. **Update `src/main.ts`**
+11. **Update `src/main.ts`**
     Add the ZodValidationPipe and env validation imports — the project will now compile:
     ```ts
     import { ZodValidationPipe } from "./shared/pipes/zod-validation.pipe";
@@ -65,6 +72,7 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 
     // inside bootstrap():
     app.useGlobalPipes(new ZodValidationPipe());
+    app.enableShutdownHooks(); // allows Prisma to disconnect cleanly
     ```
 
 ## Limitations
@@ -73,3 +81,4 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 - For non-pino loggers, replace `AppLogger` with a custom `BaseLogger` implementation.
 - `BaseFeatureExceptionFilter` uses Fastify types (`FastifyRequest`, `FastifyReply`) — requires `@nestjs/platform-fastify`.
 - `validateEnv` is a helper only — the project-specific env schema lives in `src/config/env.ts`, created by `/api-init-project`.
+- `PrismaService` requires `@prisma/client` — installed by `/api-init-project` (or run `npm i @prisma/client` + `npx prisma init`).

@@ -14,7 +14,7 @@ Applies to every `*.command.ts` and `*.query.ts` file.
 - **`props` required** — the property holding the payload must always be named `props`, never `payload`, `data`, or anything else
 - **`correlationId: string`** — required field in every Props type
 - **`super()`** — required in the CQRS class constructor
-- **`execute({ props }: XxxClass)`** — destructure `props` in the handler signature
+- **`execute({ props }: XxxClass)`** — destructure `props` in the handler signature; for paginated queries use `execute(query: ListXxxQuery)` and access `query.props` (filter fields) plus `query.limit`, `query.offset`, `query.orderBy` (pagination fields on the class itself)
 - **Handler in the same file** — no separate `*.command.handler.ts` or `*.query.handler.ts`
 - **No `CommandBus` or `QueryBus` injected in a handler** — handlers do not chain buses
 - **No `try-catch` just for logging** — the framework logs uncaught errors automatically

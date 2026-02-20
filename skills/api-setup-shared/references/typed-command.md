@@ -16,4 +16,5 @@ Barrel: `{SHARED_ROOT}/cqrs/index.ts`
 ```ts
 export * from "./typed-command";
 export * from "./typed-query";
+export * from "./paginated-query.base";
 ```
