@@ -37,17 +37,17 @@ export const Create{ModuleName}BodySchema = z.object({
 @ZodSchema(Create{ModuleName}BodySchema)
 export class Create{ModuleName}BodyDto {
   @ApiProperty({ example: "My {module-name}", description: "Display name", minLength: 1, maxLength: 100 })
-  name: string;
+  name!: string;
 }
 
 // ─── Response DTOs ───────────────────────────────────────────────────────────
 
 export class {ModuleName}ResponseDto {
   @ApiProperty({ example: "550e8400-e29b-41d4-a716-446655440000" })
-  id: string;
+  id!: string;
 
   @ApiProperty({ example: "My {module-name}" })
-  name: string;
+  name!: string;
 }
 ```
 

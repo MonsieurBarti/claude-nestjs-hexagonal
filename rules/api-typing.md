@@ -102,7 +102,7 @@ type OrderStatus = z.infer<typeof OrderStatusSchema>;
 // → "PENDING" | "CONFIRMED" | "CANCELLED"
 
 // ✅ Access individual values as a const object (replaces MyEnum.VALUE pattern)
-const OrderStatus = OrderStatusSchema.Values;
+const OrderStatus = OrderStatusSchema.enum;
 // OrderStatus.PENDING → "PENDING"
 
 // ✅ Compose into other Zod schemas
@@ -115,7 +115,7 @@ const OrderSchema = z.object({
 **Naming convention:**
 - Zod schema: `{Name}Schema` — e.g. `OrderStatusSchema`
 - TypeScript type: `{Name}` — e.g. `type OrderStatus = z.infer<typeof OrderStatusSchema>`
-- Const values object: `{Name}` — e.g. `const OrderStatus = OrderStatusSchema.Values`
+- Const values object: `{Name}` — e.g. `const OrderStatus = OrderStatusSchema.enum`
 
 TypeScript allows a `type` and a `const` to share the same name in the same file.
 
@@ -127,5 +127,5 @@ import type { OrderStatus } from "./order-status";
 ## Prohibited
 
 - `any` in any form — type annotations (`: any`), casts (`as any`), generics (`Array<any>`, `Record<string, any>`); Biome enforces `noExplicitAny` as an error
-- `enum` keyword — use `z.enum([...])` + `.Values` instead
+- `enum` keyword — use `z.enum([...])` + `.enum` instead
 - `// @ts-ignore` and `// @ts-expect-error` — fix the root cause rather than silencing the compiler

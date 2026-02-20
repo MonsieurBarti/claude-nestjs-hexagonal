@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 
 // Zod schema for validation
 export const XxxPropsSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   // ... other fields
   createdAt: z.coerce.date(),
 });

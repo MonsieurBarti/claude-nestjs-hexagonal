@@ -141,16 +141,16 @@ const CreateXxxBodySchema = z.object({ name: z.string().min(1).max(100) });
 @ZodSchema(CreateXxxBodySchema)
 export class CreateXxxBodyDto {
   @ApiProperty({ example: "My xxx", description: "Display name", minLength: 1, maxLength: 100 })
-  name: string;
+  name!: string;
 }
 
 // Response DTO
 export class XxxResponseDto {
   @ApiProperty({ example: "550e8400-e29b-41d4-a716-446655440000" })
-  id: string;
+  id!: string;
 
   @ApiProperty({ example: "My xxx" })
-  name: string;
+  name!: string;
 }
 ```
 

@@ -63,7 +63,7 @@ MODULE_ROOT: src/modules
 | Commands                | `extends TypedCommand<void>` — never return data                                 |
 | Queries                 | `extends TypedQuery<TResult>` — no side effects                                  |
 | No `any`                | The `any` type is prohibited in all forms — use `z.infer<>`, generics, `unknown` + narrowing, or `as unknown as T` (last resort) |
-| No `enum`               | Use `z.enum([...])` — derive type with `z.infer<>`, access values via `.Values`  |
+| No `enum`               | Use `z.enum([...])` — derive type with `z.infer<>`, access values via `.enum`    |
 
 ## Available skills
 
