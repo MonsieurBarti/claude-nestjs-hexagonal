@@ -26,6 +26,8 @@ import request from "supertest";
 import { execSync } from "node:child_process";
 import { PrismaService } from "{SHARED_ROOT}/prisma/prisma.service";
 import { XxxModule } from "../../{module}.module"; // feature module imports PrismaModule
+import { LOGGER_TOKEN } from "{SHARED_ROOT}/logger/inject-logger.decorator";
+import { InMemoryLogger } from "{SHARED_ROOT}/logger/in-memory-logger";
 
 describe("GET /xxx/:id (integration)", () => {
   let container: StartedPostgreSqlContainer;
@@ -33,14 +35,17 @@ describe("GET /xxx/:id (integration)", () => {
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer().start();
+    container = await new PostgreSqlContainer("postgres:16").start();
     process.env.DATABASE_URL = container.getConnectionUri();
 
     execSync("npx prisma migrate deploy", { stdio: "inherit" });
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [XxxModule], // XxxModule imports PrismaModule in its own imports array
-    }).compile();
+    })
+      .overrideProvider(LOGGER_TOKEN)
+      .useValue(new InMemoryLogger())
+      .compile();
 
     app = module.createNestApplication();
     await app.init();
@@ -59,18 +64,21 @@ describe("GET /xxx/:id (integration)", () => {
   });
 
   it("should return 200 with the read model", async () => {
-    await prisma.xxx.create({ data: { id: "test-1" /* required fields */ } });
+    const id = "550e8400-e29b-41d4-a716-446655440001";
+    await prisma.xxx.create({ data: { id /* required fields */ } });
 
     await request(app.getHttpServer())
-      .get("/xxx/test-1")
+      .get(`/xxx/${id}`)
       .expect(200)
       .expect(({ body }) => {
-        expect(body).toMatchObject({ id: "test-1" });
+        expect(body).toMatchObject({ id });
       });
   });
 
   it("should return 404 when not found", async () => {
-    await request(app.getHttpServer()).get("/xxx/missing").expect(404);
+    await request(app.getHttpServer())
+      .get("/xxx/00000000-0000-0000-0000-000000000000")
+      .expect(404);
   });
 });
 ```
@@ -93,6 +101,8 @@ import { execSync } from "node:child_process";
 import { PrismaService } from "{SHARED_ROOT}/prisma/prisma.service";
 import { XxxModule } from "../../{module}.module";
 import { ListXxxQuery } from "./list-{name}.query";
+import { LOGGER_TOKEN } from "{SHARED_ROOT}/logger/inject-logger.decorator";
+import { InMemoryLogger } from "{SHARED_ROOT}/logger/in-memory-logger";
 
 describe("GET /xxx (paginated integration)", () => {
   let container: StartedPostgreSqlContainer;
@@ -100,14 +110,17 @@ describe("GET /xxx (paginated integration)", () => {
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer().start();
+    container = await new PostgreSqlContainer("postgres:16").start();
     process.env.DATABASE_URL = container.getConnectionUri();
 
     execSync("npx prisma migrate deploy", { stdio: "inherit" });
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [XxxModule], // XxxModule imports PrismaModule in its own imports array
-    }).compile();
+    })
+      .overrideProvider(LOGGER_TOKEN)
+      .useValue(new InMemoryLogger())
+      .compile();
 
     app = module.createNestApplication();
     await app.init();
@@ -127,9 +140,9 @@ describe("GET /xxx (paginated integration)", () => {
   it("should return paginated results with correct total", async () => {
     await prisma.xxx.createMany({
       data: [
-        { id: "1" /* fields */ },
-        { id: "2" /* fields */ },
-        { id: "3" /* fields */ },
+        { id: "550e8400-e29b-41d4-a716-000000000001" /* fields */ },
+        { id: "550e8400-e29b-41d4-a716-000000000002" /* fields */ },
+        { id: "550e8400-e29b-41d4-a716-000000000003" /* fields */ },
       ],
     });
 

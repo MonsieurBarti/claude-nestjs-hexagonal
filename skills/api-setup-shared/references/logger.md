@@ -130,7 +130,7 @@ export class InMemoryLogger extends BaseLogger {
 
 ```ts
 import { Global, Module } from "@nestjs/common";
-import { LoggerModule } from "nestjs-pino";
+import { LoggerModule, PinoLogger } from "nestjs-pino";
 import { AppLogger } from "./pino-logger";
 import { LOGGER_TOKEN } from "./inject-logger.decorator";
 
@@ -148,10 +148,10 @@ import { LOGGER_TOKEN } from "./inject-logger.decorator";
     }),
   ],
   providers: [
-    AppLogger,
     {
       provide: LOGGER_TOKEN,
-      useClass: AppLogger,
+      useFactory: (pinoLogger: PinoLogger) => new AppLogger(pinoLogger),
+      inject: [PinoLogger],
     },
   ],
   exports: [LOGGER_TOKEN],

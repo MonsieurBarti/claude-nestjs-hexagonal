@@ -16,7 +16,7 @@ export class CustomZodValidationException extends HttpException {
       {
         statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
         message: "Validation failed",
-        errors: error.flatten().fieldErrors,
+        errors: z.flattenError(error).fieldErrors,
       },
       HttpStatus.UNPROCESSABLE_ENTITY,
     );

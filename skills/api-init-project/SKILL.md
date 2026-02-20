@@ -23,7 +23,7 @@ One-time bootstrap for a new NestJS hexagonal project. Run this before `/api-set
 1. **Create the NestJS project**
    Run in the parent directory of where the project should live:
    ```bash
-   nest new {app-name} --package-manager pnpm
+   npm install -g @nestjs/cli@11 && npx nest new {app-name} --package-manager pnpm
    cd {app-name}
    ```
    > If running inside an existing git repository (monorepo), add `--skip-git` to avoid a nested git repo.
@@ -63,85 +63,78 @@ One-time bootstrap for a new NestJS hexagonal project. Run this before `/api-set
 
 4. **Install production dependencies**
    ```bash
-   pnpm add @nestjs/cqrs @nestjs/platform-fastify fastify nestjs-pino pino-http pino-pretty zod @prisma/client @nestjs/swagger
+   pnpm add @nestjs/cqrs @nestjs/platform-fastify fastify @fastify/static nestjs-pino pino-http pino-pretty zod @prisma/client @nestjs/swagger
    ```
 
-5. **Upgrade NestJS core packages to v11**
-   `nest new` may scaffold with NestJS v10 while `@nestjs/platform-fastify` installs v11. Align all packages to avoid type incompatibilities:
-   ```bash
-   pnpm add @nestjs/common@^11 @nestjs/core@^11
-   pnpm add -D @nestjs/testing@^11
-   ```
-
-6. **Install dev dependencies**
+5. **Install dev dependencies**
    ```bash
    pnpm add -D prisma vitest @faker-js/faker @vitest/coverage-v8 unplugin-swc @swc/core @biomejs/biome lefthook vite-tsconfig-paths
    ```
 
-7. **Remove Jest, Express platform, ESLint, and Prettier**
+6. **Remove Jest, Express platform, ESLint, and Prettier**
    ```bash
    pnpm remove jest @types/jest ts-jest supertest @types/supertest @nestjs/platform-express eslint @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint-config-prettier eslint-plugin-prettier prettier @nestjs/eslint-plugin
    ```
    > Unknown packages are silently skipped — safe to run regardless of which packages `nest new` installed.
 
-8. **Remove ESLint and Prettier config files**
+7. **Remove ESLint and Prettier config files**
    ```bash
    rm -f .eslintrc.js .eslintrc.json .prettierrc .prettierrc.json .prettierignore
    ```
 
-9. **Update `package.json` scripts and remove the Jest block**
+8. **Update `package.json` scripts and remove the Jest block**
    Load [references/package-json-updates.md](references/package-json-updates.md).
    Apply the changes exactly as described — replace `scripts`, remove the `jest` top-level block.
 
-10. **Create `vitest.config.ts`**
+9. **Create `vitest.config.ts`**
     Load [references/vitest-config.md](references/vitest-config.md).
     Create the file at the project root. This single file defines the SWC plugin, globals, coverage, and all three test projects (unit / integration / e2e) inline — no separate workspace file needed.
 
-11. **Create `biome.json`**
+10. **Create `biome.json`**
     Load [references/biome-config.md](references/biome-config.md).
     Create the file at the project root.
 
-12. **Create `lefthook.yml`**
+11. **Create `lefthook.yml`**
     Load [references/git-hooks.md](references/git-hooks.md).
     Create the file at the project root.
 
-13. **Install git hooks**
+12. **Install git hooks**
     ```bash
     pnpm lefthook install
     ```
 
-14. **Create project directories**
+13. **Create project directories**
     ```bash
     mkdir -p src/modules src/config
     ```
 
-15. **Create `src/config/env.ts`**
+14. **Create `src/config/env.ts`**
     Load [references/env-config.md](references/env-config.md).
     This is the project-specific env schema. The `validateEnv` helper it imports is created by `/api-setup-shared`.
 
-16. **Replace `src/main.ts`**
+15. **Replace `src/main.ts`**
     Load [references/main-ts.md](references/main-ts.md).
     Overwrite `src/main.ts` with the Fastify + pino + ZodPipe + env version.
     *(Imports from `src/shared/` will resolve once `/api-setup-shared` runs.)*
 
-17. **Replace `src/app.module.ts`**
+16. **Replace `src/app.module.ts`**
     Load [references/app-module.md](references/app-module.md).
     Overwrite `src/app.module.ts` with the clean version (no AppController, no AppService).
 
-18. **Initialize Prisma**
+17. **Initialize Prisma**
     ```bash
     pnpm prisma init
     ```
     This creates `prisma/schema.prisma` and `.env` with a `DATABASE_URL` placeholder.
 
-19. **Create `.claude/CLAUDE.md`**
+18. **Create `.claude/CLAUDE.md`**
     ```bash
     mkdir -p .claude
     ```
     Load [references/claude-md.md](references/claude-md.md).
     Create `.claude/CLAUDE.md`, substituting `{app-name}` with the actual project name.
 
-20. **Print next steps for the user**
+19. **Print next steps for the user**
     ```
     ✓ {app-name} scaffold is ready. Next:
 
