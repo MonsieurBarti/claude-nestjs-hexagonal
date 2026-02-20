@@ -32,37 +32,64 @@ export abstract class BaseLogger {
 import { Injectable } from "@nestjs/common";
 import { PinoLogger } from "nestjs-pino";
 import { BaseLogger, ChildLoggerContext, LogParams } from "./logger";
+import { buildLocalPayload, shouldLog } from "./local-log-formatter";
 
 @Injectable()
 export class AppLogger extends BaseLogger {
   private readonly context: ChildLoggerContext;
+  private readonly isLocal: boolean;
 
   constructor(
     private readonly pinoLogger: PinoLogger,
+    isLocal: boolean = false,
     context: ChildLoggerContext = {},
   ) {
     super();
+    this.isLocal = isLocal;
     this.context = context;
   }
 
   log(message: string, params?: LogParams): void {
-    this.pinoLogger.info({ ...this.context, ...params }, message);
+    if (!shouldLog(this.context, this.isLocal)) return;
+    if (this.isLocal) {
+      this.pinoLogger.info(buildLocalPayload(message, this.context, params));
+    } else {
+      this.pinoLogger.info({ ...this.context, ...params }, message);
+    }
   }
 
   warn(message: string, params?: LogParams): void {
-    this.pinoLogger.warn({ ...this.context, ...params }, message);
+    if (!shouldLog(this.context, this.isLocal)) return;
+    if (this.isLocal) {
+      this.pinoLogger.warn(buildLocalPayload(message, this.context, params));
+    } else {
+      this.pinoLogger.warn({ ...this.context, ...params }, message);
+    }
   }
 
   debug(message: string, params?: LogParams): void {
-    this.pinoLogger.debug({ ...this.context, ...params }, message);
+    if (!shouldLog(this.context, this.isLocal)) return;
+    if (this.isLocal) {
+      this.pinoLogger.debug(buildLocalPayload(message, this.context, params));
+    } else {
+      this.pinoLogger.debug({ ...this.context, ...params }, message);
+    }
   }
 
   error(message: string, error: unknown, params?: LogParams): void {
-    this.pinoLogger.error({ ...this.context, ...params, err: error }, message);
+    if (!shouldLog(this.context, this.isLocal)) return;
+    if (this.isLocal) {
+      this.pinoLogger.error(buildLocalPayload(message, this.context, params, error));
+    } else {
+      this.pinoLogger.error({ ...this.context, ...params, err: error }, message);
+    }
   }
 
   createChild(context: ChildLoggerContext): BaseLogger {
-    return new AppLogger(this.pinoLogger, { ...this.context, ...context });
+    return new AppLogger(this.pinoLogger, this.isLocal, {
+      ...this.context,
+      ...context,
+    });
   }
 }
 ```
@@ -126,6 +153,159 @@ export class InMemoryLogger extends BaseLogger {
 }
 ```
 
+## local-logger.config.ts — local dev filter (gitignored)
+
+**Important**: add `src/shared/logger/local-logger.config.ts` to `.gitignore` — this file is edited
+per session and must never be committed.
+
+```ts
+/**
+ * Local development only — has NO effect in production.
+ * This file is .gitignore'd: edit freely without fear of committing personal settings.
+ */
+export const LocalLoggerConfig = {
+  /**
+   * Allowlist: only log these moduleName values. Empty = log all.
+   * Takes precedence over disabledModules.
+   * Example: ["catalog", "auth"]
+   */
+  enabledModules: [] as string[],
+
+  /**
+   * Blocklist: skip these moduleName values. Ignored if enabledModules is non-empty.
+   * Example: ["cqrs", "prisma"]
+   */
+  disabledModules: [] as string[],
+
+  /**
+   * ANSI color name per moduleName for visual scanning.
+   * Available: red, green, yellow, blue, magenta, cyan, white, gray
+   * Example: { catalog: "cyan", auth: "magenta" }
+   */
+  moduleColors: {} as Record<string, string>,
+
+  /** true → log full request (headers, body, query) | false → only "METHOD /url" */
+  showFullRequest: false,
+
+  /** Include the `data` field from LogParams in local log output. */
+  showDataField: true,
+
+  /** Include error object details in error-level log output. */
+  showErrors: true,
+};
+```
+
+## local-log-formatter.ts — ANSI formatting helper
+
+Keeps local-mode ANSI logic out of `AppLogger`. No external dependencies — uses Node built-in escape codes.
+
+```ts
+import type { ChildLoggerContext, LogParams } from "./logger";
+import { LocalLoggerConfig } from "./local-logger.config";
+
+const ANSI: Record<string, string> = {
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
+  cyan: "\x1b[36m",
+  white: "\x1b[37m",
+  gray: "\x1b[90m",
+  reset: "\x1b[0m",
+};
+
+function colorize(text: string, color: string): string {
+  return `${ANSI[color] ?? ANSI["white"]}${text}${ANSI["reset"]}`;
+}
+
+export function shouldLog(context: ChildLoggerContext, isLocal: boolean): boolean {
+  if (!isLocal) return true;
+  const mod = context.moduleName;
+  if (!mod) return true;
+  if (LocalLoggerConfig.enabledModules.length > 0) {
+    return LocalLoggerConfig.enabledModules.includes(mod);
+  }
+  if (LocalLoggerConfig.disabledModules.length > 0) {
+    return !LocalLoggerConfig.disabledModules.includes(mod);
+  }
+  return true;
+}
+
+export function buildLocalPayload(
+  message: string,
+  context: ChildLoggerContext,
+  params?: LogParams,
+  error?: unknown,
+): Record<string, unknown> {
+  const parts: string[] = [];
+
+  if (context.moduleName) {
+    const color = LocalLoggerConfig.moduleColors[context.moduleName] ?? "white";
+    parts.push(colorize(`[${context.moduleName}]`, color));
+  }
+  if (context.className) {
+    parts.push(colorize(context.className, "gray"));
+  }
+
+  const prefix = parts.length > 0 ? `${parts.join(" ")} | ` : "";
+  const payload: Record<string, unknown> = { msg: `${prefix}${message}` };
+
+  if (LocalLoggerConfig.showDataField && params?.data) {
+    payload["data"] = params.data;
+  }
+  if (LocalLoggerConfig.showErrors && error != null) {
+    payload["error"] = error;
+  }
+
+  return payload;
+}
+```
+
+## request-serializer.ts — pino request serializer
+
+Replaces pino's default `req` serializer. Condenses output when `IS_LOCAL=true`.
+Note: body is logged as-is — add field redaction in the app layer if needed.
+
+```ts
+import { LocalLoggerConfig } from "./local-logger.config";
+
+interface SerializedRequest {
+  method: string;
+  url: string;
+  headers?: Record<string, unknown>;
+  body?: unknown;
+  query?: Record<string, unknown>;
+  params?: Record<string, unknown>;
+  remoteAddress?: string;
+  userAgent?: string;
+}
+
+export const requestSerializer = (req: Record<string, unknown>): SerializedRequest => {
+  const isLocal = process.env["IS_LOCAL"] === "true";
+
+  if (isLocal && !LocalLoggerConfig.showFullRequest) {
+    return {
+      method: req["method"] as string,
+      url: req["url"] as string,
+    };
+  }
+
+  const headers = req["headers"] as Record<string, unknown> | undefined;
+
+  return {
+    method: req["method"] as string,
+    url: req["url"] as string,
+    headers,
+    body: req["body"],
+    query: req["query"] as Record<string, unknown> | undefined,
+    params: req["params"] as Record<string, unknown> | undefined,
+    remoteAddress: (req["ip"] ?? req["remoteAddress"]) as string | undefined,
+    userAgent: headers?.["user-agent"] as string | undefined,
+  };
+};
+```
+
 ## logger.config.ts — pino config factory
 
 ```ts
@@ -133,8 +313,8 @@ import pino from "pino";
 import type { Params } from "nestjs-pino";
 import type { ConfigService } from "@nestjs/config";
 import type { EnvVars } from "../../config/env";
+import { requestSerializer } from "./request-serializer";
 
-const requestSerializer = pino.stdSerializers.req;
 const responseSerializer = pino.stdSerializers.res;
 
 export const getLoggerConfig = (configService: ConfigService<EnvVars, true>): Params => {
@@ -144,7 +324,7 @@ export const getLoggerConfig = (configService: ConfigService<EnvVars, true>): Pa
     pinoHttp: {
       serializers: {
         err: pino.stdSerializers.err,
-        req: requestSerializer,
+        req: requestSerializer,   // ← replaces pino.stdSerializers.req
         res: responseSerializer,
       },
       autoLogging: false,
@@ -213,8 +393,9 @@ import type { EnvVars } from "../../config/env";
   providers: [
     {
       provide: LOGGER_TOKEN,
-      useFactory: (pinoLogger: PinoLogger) => new AppLogger(pinoLogger),
-      inject: [PinoLogger],
+      useFactory: (pinoLogger: PinoLogger, configService: ConfigService<EnvVars, true>) =>
+        new AppLogger(pinoLogger, configService.get("IS_LOCAL", { infer: true })),
+      inject: [PinoLogger, ConfigService],
     },
   ],
   exports: [LOGGER_TOKEN],
@@ -254,4 +435,7 @@ imports: [TestLoggerModule, XxxModule]
 export * from "./logger";
 export * from "./inject-logger.decorator";
 export * from "./in-memory-logger";
+export * from "./local-logger.config";
+export * from "./local-log-formatter";
+export * from "./request-serializer";
 ```

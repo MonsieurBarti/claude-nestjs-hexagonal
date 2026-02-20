@@ -4,8 +4,8 @@ description: Creates all shared infrastructure required for hexagonal NestJS mod
   TypedCommand, TypedQuery, TypedCommandBus, TypedQueryBus, CorrelationId decorator,
   PaginatedQueryBase, BaseDomainError, BaseFeatureExceptionFilter,
   the BaseLogger pattern (wrapping nestjs-pino), ZodValidationPipe with @ZodSchema decorator,
-  PrismaService + PrismaModule (global), and the validateEnv helper. Run once per project
-  before using other api-* skills.
+  PrismaService + PrismaModule (global), validateEnv helper, CqrsInterceptor (bus observer),
+  and LoggingInterceptor (HTTP request logger). Run once per project before using other api-* skills.
 ---
 
 # api-setup-shared
@@ -32,10 +32,17 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 4. **BaseFeatureExceptionFilter** — `{SHARED_ROOT}/errors/base-feature-exception.filter.ts`
    Load [references/base-feature-exception-filter.md](references/base-feature-exception-filter.md).
 
-5. **Logger stack** (6 files + module + test helper) — `{SHARED_ROOT}/logger/` and `{SHARED_ROOT}/testing/`
+5. **Logger stack** (9 files + module + test helper) — `{SHARED_ROOT}/logger/` and `{SHARED_ROOT}/testing/`
    Load [references/logger.md](references/logger.md) for all logger files.
    This includes: `logger.ts`, `pino-logger.ts`, `inject-logger.decorator.ts`, `in-memory-logger.ts`, `logger.config.ts`, `app-logger.module.ts`.
-   Also create `{SHARED_ROOT}/testing/test-logger.module.ts` (shared `@Global()` test module — see logger.md).
+   Also create:
+   - `{SHARED_ROOT}/logger/local-logger.config.ts` — per-session module filter config (see logger.md)
+   - `{SHARED_ROOT}/logger/local-log-formatter.ts` — ANSI formatting helper for local mode (see logger.md)
+   - `{SHARED_ROOT}/logger/request-serializer.ts` — pino request serializer (see logger.md)
+   - `{SHARED_ROOT}/testing/test-logger.module.ts` — shared `@Global()` test module (see logger.md)
+
+   Add `src/shared/logger/local-logger.config.ts` to `.gitignore` so personal module filter
+   preferences are never accidentally committed.
 
 6. **Zod validation** (pipe + exception + decorator) — `{SHARED_ROOT}/pipes/` and `{SHARED_ROOT}/decorators/`
    Load [references/zod-validation-pipe.md](references/zod-validation-pipe.md).
@@ -65,23 +72,42 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
     Steps 6 and 7 include their own barrel exports.
     The `cqrs/index.ts` barrel must also export `TypedCommandBus` and `TypedQueryBus` (steps 9–10).
 
-13. **Update `src/app.module.ts`**
-    Add `AppLoggerModule` and `PrismaModule` to the `imports` array:
+13. **CqrsInterceptor** — `{SHARED_ROOT}/interceptors/cqrs.interceptor.ts`
+    Load [references/cqrs-interceptor.md](references/cqrs-interceptor.md).
+    Subscribes to `CommandBus`, `QueryBus`, `EventBus` on module init — logs every
+    command/query/event with the class name and full payload via `BaseLogger`.
+
+14. **LoggingInterceptor** — `{SHARED_ROOT}/interceptors/logging.interceptor.ts`
+    Load [references/logging-interceptor.md](references/logging-interceptor.md).
+    Logs incoming HTTP requests (method, URL, body, query, params) when `IS_LOCAL=false`.
+    Add both exports to `{SHARED_ROOT}/interceptors/index.ts` (see reference file).
+
+15. **Update `src/app.module.ts`**
+    Add `AppLoggerModule`, `PrismaModule` to `imports`, and the interceptors to `providers`:
     ```ts
+    import { APP_INTERCEPTOR } from "@nestjs/core";
     import { AppLoggerModule } from "./shared/logger/app-logger.module";
     import { PrismaModule } from "./shared/prisma/prisma.module";
+    import { CqrsInterceptor } from "./shared/interceptors/cqrs.interceptor";
+    import { LoggingInterceptor } from "./shared/interceptors/logging.interceptor";
 
     @Module({
       imports: [
-        LoggerModule.forRoot({ ... }),
+        ConfigModule.forRoot({ isGlobal: true, cache: true, validate: validateEnvironment }),
         AppLoggerModule,
         PrismaModule,
+      ],
+      providers: [
+        CqrsInterceptor,
+        { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
       ],
     })
     export class AppModule {}
     ```
+    Note: `CqrsInterceptor` is a plain provider (not `APP_INTERCEPTOR`) — it subscribes to
+    CQRS observables, not the HTTP pipeline.
 
-14. **Update `src/main.ts`**
+16. **Update `src/main.ts`**
     Add the ZodValidationPipe and env validation imports — the project will now compile:
     ```ts
     import { ZodValidationPipe } from "./shared/pipes/zod-validation.pipe";
