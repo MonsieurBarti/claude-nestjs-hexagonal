@@ -1,7 +1,8 @@
 ---
 name: api-setup-shared
 description: Creates all shared infrastructure required for hexagonal NestJS modules —
-  TypedCommand, TypedQuery, PaginatedQueryBase, BaseDomainError, BaseFeatureExceptionFilter,
+  TypedCommand, TypedQuery, TypedCommandBus, TypedQueryBus, CorrelationId decorator,
+  PaginatedQueryBase, BaseDomainError, BaseFeatureExceptionFilter,
   the BaseLogger pattern (wrapping nestjs-pino), ZodValidationPipe with @ZodSchema decorator,
   PrismaService + PrismaModule (global), and the validateEnv helper. Run once per project
   before using other api-* skills.
@@ -44,11 +45,25 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 8. **PrismaService + PrismaModule** — `{SHARED_ROOT}/prisma/prisma.service.ts` and `{SHARED_ROOT}/prisma/prisma.module.ts`
    Load [references/prisma.md](references/prisma.md).
 
-9. **Barrel exports** — `{SHARED_ROOT}/cqrs/index.ts`, `errors/index.ts`, `logger/index.ts`
-   Included in the respective reference files (steps 1–5).
-   Steps 6 and 7 include their own barrel exports.
+9. **TypedCommandBus** — `{SHARED_ROOT}/cqrs/typed-command-bus.ts`
+   Load [references/typed-command-bus.md](references/typed-command-bus.md).
 
-10. **Update `src/app.module.ts`**
+10. **TypedQueryBus** — `{SHARED_ROOT}/cqrs/typed-query-bus.ts`
+    Load [references/typed-query-bus.md](references/typed-query-bus.md).
+
+11. **CorrelationId decorator** — `{SHARED_ROOT}/decorators/correlation-id.decorator.ts`
+    Load [references/correlation-id-decorator.md](references/correlation-id-decorator.md).
+    Also add to the decorators barrel (`{SHARED_ROOT}/decorators/index.ts`):
+    ```ts
+    export * from "./correlation-id.decorator";
+    ```
+
+12. **Barrel exports** — `{SHARED_ROOT}/cqrs/index.ts`, `errors/index.ts`, `logger/index.ts`
+    Included in the respective reference files (steps 1–5).
+    Steps 6 and 7 include their own barrel exports.
+    The `cqrs/index.ts` barrel must also export `TypedCommandBus` and `TypedQueryBus` (steps 9–10).
+
+13. **Update `src/app.module.ts`**
     Add `AppLoggerModule` and `PrismaModule` to the `imports` array:
     ```ts
     import { AppLoggerModule } from "./shared/logger/app-logger.module";
@@ -64,7 +79,7 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
     export class AppModule {}
     ```
 
-11. **Update `src/main.ts`**
+14. **Update `src/main.ts`**
     Add the ZodValidationPipe and env validation imports — the project will now compile:
     ```ts
     import { ZodValidationPipe } from "./shared/pipes/zod-validation.pipe";

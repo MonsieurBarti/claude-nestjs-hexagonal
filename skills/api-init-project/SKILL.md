@@ -75,7 +75,7 @@ One-time bootstrap for a new NestJS hexagonal project. Run this before `/api-set
 
 6. **Install dev dependencies**
    ```bash
-   pnpm add -D prisma vitest @faker-js/faker @vitest/coverage-v8 unplugin-swc @swc/core @biomejs/biome lefthook
+   pnpm add -D prisma vitest @faker-js/faker @vitest/coverage-v8 unplugin-swc @swc/core @biomejs/biome lefthook vite-tsconfig-paths
    ```
 
 7. **Remove Jest, Express platform, ESLint, and Prettier**

@@ -29,7 +29,8 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for `{SHARED_ROOT}` a
    Load [references/test-template.md](references/test-template.md) and use the matching section.
    Tests use Supertest + Testcontainers — a PostgreSQL container starts in `beforeAll`, tables are truncated in `beforeEach`.
 
-5. **Register handler** — add `XxxQueryHandler` to the `queryHandlers` array in `application/{module}.module.ts`.
+5. **Register handler** — add `XxxQueryHandler` to the `providers` array in
+   `application/{module-name}.module.ts` and add the corresponding import at the top of that file.
 
 6. **Ensure PrismaService is injectable** — confirm `PrismaModule` (or equivalent) is imported in the feature module so `PrismaService` is available via DI.
 

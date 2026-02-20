@@ -6,7 +6,7 @@
 import { BaseDomainError } from "{SHARED_ROOT}/errors/base-domain.error";
 
 export abstract class {ModuleName}Error extends BaseDomainError {
-  abstract readonly errorCode: string;
+  abstract override readonly errorCode: string;
 }
 ```
 

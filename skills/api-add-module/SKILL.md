@@ -40,7 +40,7 @@ If any are missing, run `/api-setup-shared` first.
    Load [references/domain-errors-template.md](references/domain-errors-template.md).
    For entities: run `/api-add-domain-entity`.
 
-4. **Application module** — `application/{module-name}.module.ts` + barrel exports
+4. **Application module** — `application/{module-name}.module.ts`
    Load [references/application-module-template.md](references/application-module-template.md).
 
 5. **Infrastructure layer** — for each aggregate, run `/api-add-domain-entity` (steps 5–7).

@@ -16,25 +16,25 @@ import { BaseLogger } from "../logger/logger";
 
 export class ErrorResponseDto {
   @ApiProperty({ example: "USER_NOT_FOUND", description: "Machine-readable error code (SCREAMING_SNAKE_CASE)" })
-  type: string;
+  type!: string;
 
   @ApiProperty({ example: "UserNotFoundError", description: "Error class name" })
-  title: string;
+  title!: string;
 
   @ApiProperty({ example: 404 })
-  status: number;
+  status!: number;
 
   @ApiProperty({ example: "User with id abc123 was not found" })
-  detail: string;
+  detail!: string;
 
   @ApiProperty({ example: "/v1/users/abc123", description: "Request URL" })
-  instance: string;
+  instance!: string;
 
   @ApiProperty({ example: "550e8400-e29b-41d4-a716-446655440000" })
-  correlationId: string;
+  correlationId!: string;
 
   @ApiProperty({ example: "2024-01-15T10:30:00.000Z", description: "ISO 8601 timestamp" })
-  timestamp: string;
+  timestamp!: string;
 
   @ApiProperty({ required: false, nullable: true, description: "Additional error context" })
   metadata?: Record<string, unknown>;
@@ -53,7 +53,7 @@ export abstract class BaseFeatureExceptionFilter<
     });
   }
 
-  async catch(error: TError, host: ArgumentsHost): Promise<void> {
+  override async catch(error: TError, host: ArgumentsHost): Promise<void> {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<FastifyRequest>();
     const response = ctx.getResponse<FastifyReply>();
@@ -62,7 +62,7 @@ export abstract class BaseFeatureExceptionFilter<
 
     this.logger.error(`${error.errorCode} | ${error.message}`, error, {
       correlationId,
-      metadata: error.metadata,
+      data: error.metadata,
     });
 
     const statusCode = this.mapErrorToStatus(error);

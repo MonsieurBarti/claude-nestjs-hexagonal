@@ -51,9 +51,10 @@ export class XxxQueryHandler implements IQueryHandler<XxxQuery, XxxQueryResult> 
     });
   }
 }
-
-export const queryHandlers = [XxxQueryHandler];
 ```
+
+> Register by adding `XxxQueryHandler` to the `providers` array in
+> `application/{module-name}.module.ts` (see `/api-add-query` Step 5).
 
 ---
 
@@ -121,7 +122,7 @@ export class ListXxxQueryHandler
         where,
         take: query.limit,
         skip: query.offset,
-        orderBy: { [query.orderBy.field]: query.orderBy.direction },
+        orderBy: { [query.orderBy.field]: query.orderBy.direction } as Record<string, "asc" | "desc">,
         select: { id: true, /* projected fields */ },
       }),
       this.prisma.xxx.count({ where }),
@@ -130,6 +131,7 @@ export class ListXxxQueryHandler
     return { data: rows, total, page: query.page, limit: query.limit };
   }
 }
-
-export const queryHandlers = [ListXxxQueryHandler];
 ```
+
+> Register by adding `ListXxxQueryHandler` to the `providers` array in
+> `application/{module-name}.module.ts` (see `/api-add-query` Step 5).

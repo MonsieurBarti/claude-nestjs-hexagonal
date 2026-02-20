@@ -6,14 +6,13 @@ Single config file — defines the SWC plugin, globals, coverage, and the three 
 
 ```ts
 import swc from "unplugin-swc";
+import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
 
+const sharedPlugins = [swc.vite({ module: { type: "es6" } }), tsconfigPaths()];
+
 export default defineConfig({
-  plugins: [
-    swc.vite({
-      module: { type: "es6" },
-    }),
-  ],
+  plugins: sharedPlugins,
   test: {
     globals: true,
     passWithNoTests: true,
@@ -33,6 +32,7 @@ export default defineConfig({
     },
     projects: [
       {
+        plugins: sharedPlugins,
         test: {
           name: "unit",
           include: ["src/**/*.spec.ts"],
@@ -40,12 +40,14 @@ export default defineConfig({
         },
       },
       {
+        plugins: sharedPlugins,
         test: {
           name: "integration",
           include: ["src/**/*.integration.spec.ts"],
         },
       },
       {
+        plugins: sharedPlugins,
         test: {
           name: "e2e",
           include: ["src/**/*.e2e.spec.ts"],
@@ -68,6 +70,8 @@ export default defineConfig({
 ## Notes
 
 - `unplugin-swc` is required because NestJS uses TypeScript decorators (`@Injectable`, `@CommandHandler`, etc.) which Vitest's default esbuild transform does not support.
+- `vite-tsconfig-paths` resolves `src/` absolute path aliases (from `baseUrl: "./"` in tsconfig) — required for `import ... from "src/shared/..."` to work in tests.
+- `sharedPlugins` is defined once and reused in both the root config and each project entry — Vitest v4 requires plugins on each project to honour path aliases at that level.
 - `globals: true` enables `describe`, `it`, `expect`, `beforeEach` without explicit imports in test files.
 - `passWithNoTests: true` at the root level — prevents failure when no test files exist (e.g. a freshly scaffolded project). Required in Vitest v4.
 - `test.projects` (inline) replaces the deprecated `vitest.workspace.ts` file (deprecated in v3.2, unsupported in v4).

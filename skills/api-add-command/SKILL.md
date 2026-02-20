@@ -25,7 +25,8 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for `{SHARED_ROOT}` a
    Load [references/test-template.md](references/test-template.md) for the exact structure.
    If using `BaseLogger`, pass `new InMemoryLogger()` as the second constructor argument.
 
-4. **Register handler** — add `XxxCommandHandler` to the `commandHandlers` array in `application/{module}.module.ts`.
+4. **Register handler** — add `XxxCommandHandler` to the `providers` array in
+   `application/{module-name}.module.ts` and add the corresponding import at the top of that file.
 
 ## Limitations
 
