@@ -17,7 +17,7 @@ File: `application/queries/{query-name}/{query-name}.query.spec.ts`
 // Integration test — requires Docker (Testcontainers)
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { type INestApplication } from "@nestjs/common";
+import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -25,12 +25,13 @@ import {
 import request from "supertest";
 import { execSync } from "node:child_process";
 import { PrismaService } from "{SHARED_ROOT}/prisma/prisma.service";
+import { ZodValidationPipe } from "{SHARED_ROOT}/pipes/zod-validation.pipe";
 import { XxxModule } from "../../{module}.module"; // feature module imports PrismaModule
 import { TestLoggerModule } from "{SHARED_ROOT}/testing/test-logger.module";
 
 describe("GET /xxx/:id (integration)", () => {
   let container: StartedPostgreSqlContainer;
-  let app: INestApplication;
+  let app: NestFastifyApplication;
   let prisma: PrismaService;
 
   beforeAll(async () => {
@@ -43,8 +44,13 @@ describe("GET /xxx/:id (integration)", () => {
       imports: [TestLoggerModule, XxxModule], // XxxModule imports PrismaModule in its own imports array
     }).compile();
 
-    app = module.createNestApplication();
+    app = module.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter({ logger: false }),
+    );
+    app.useGlobalPipes(new ZodValidationPipe());
+    app.enableVersioning(); // only if the controller uses versioning
     await app.init();
+    await app.getHttpAdapter().getInstance().ready();
 
     prisma = module.get(PrismaService);
   }, 120_000); // allow time for container startup + migrations
@@ -87,7 +93,7 @@ describe("GET /xxx/:id (integration)", () => {
 // Integration test — requires Docker (Testcontainers)
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import { Test, type TestingModule } from "@nestjs/testing";
-import { type INestApplication } from "@nestjs/common";
+import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
@@ -95,13 +101,14 @@ import {
 import request from "supertest";
 import { execSync } from "node:child_process";
 import { PrismaService } from "{SHARED_ROOT}/prisma/prisma.service";
+import { ZodValidationPipe } from "{SHARED_ROOT}/pipes/zod-validation.pipe";
 import { XxxModule } from "../../{module}.module";
 import { ListXxxQuery } from "./list-{name}.query";
 import { TestLoggerModule } from "{SHARED_ROOT}/testing/test-logger.module";
 
 describe("GET /xxx (paginated integration)", () => {
   let container: StartedPostgreSqlContainer;
-  let app: INestApplication;
+  let app: NestFastifyApplication;
   let prisma: PrismaService;
 
   beforeAll(async () => {
@@ -114,8 +121,13 @@ describe("GET /xxx (paginated integration)", () => {
       imports: [TestLoggerModule, XxxModule], // XxxModule imports PrismaModule in its own imports array
     }).compile();
 
-    app = module.createNestApplication();
+    app = module.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter({ logger: false }),
+    );
+    app.useGlobalPipes(new ZodValidationPipe());
+    app.enableVersioning(); // only if the controller uses versioning
     await app.init();
+    await app.getHttpAdapter().getInstance().ready();
 
     prisma = module.get(PrismaService);
   }, 120_000);
