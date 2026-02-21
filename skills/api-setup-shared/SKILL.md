@@ -5,7 +5,9 @@ description: Creates all shared infrastructure required for hexagonal NestJS mod
   PaginatedQueryBase, BaseDomainError, BaseFeatureExceptionFilter,
   the BaseLogger pattern (wrapping nestjs-pino), ZodValidationPipe with @ZodSchema decorator,
   PrismaService + PrismaModule (global), validateEnv helper, CqrsInterceptor (bus observer),
-  and LoggingInterceptor (HTTP request logger). Run once per project before using other api-* skills.
+  LoggingInterceptor (HTTP request logger), DomainEvent base class, SqlRepositoryBase
+  (generic Prisma CRUD + auto event publishing), and IDateProvider + DateProvider + FakeDateProvider
+  (date abstraction for deterministic testing). Run once per project before using other api-* skills.
 ---
 
 # api-setup-shared
@@ -54,6 +56,22 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 8. **PrismaService + PrismaModule** — `{SHARED_ROOT}/prisma/prisma.service.ts` and `{SHARED_ROOT}/prisma/prisma.module.ts`
    Load [references/prisma.md](references/prisma.md).
 
+8b. **DomainEvent base class** — `{SHARED_ROOT}/ddd/domain-event.base.ts` + `{SHARED_ROOT}/ddd/index.ts`
+    Load [references/domain-event.md](references/domain-event.md).
+    Creates the abstract `DomainEvent` class implementing `IEvent` from `@nestjs/cqrs`,
+    with `DomainEventMetadata` (correlationId, timestamp, userId) and `DomainEventProps<T>` type.
+
+8c. **SqlRepositoryBase** — `{SHARED_ROOT}/db/sql-repository.base.ts`
+    Load [references/sql-repository-base.md](references/sql-repository-base.md).
+    Abstract Prisma-based repository providing generic `save()`, `findById()`, `delete()`
+    with automatic domain event publishing via `EventBus`. Entities must extend `AggregateRoot`.
+    Also exports the `EntityMapper<Entity, DbRecord>` interface used by mappers.
+
+8d. **DateProvider** — `{SHARED_ROOT}/date/date-provider.ts`, `{SHARED_ROOT}/date/date-provider.impl.ts`, `{SHARED_ROOT}/testing/fake-date-provider.ts`
+    Load [references/date-provider.md](references/date-provider.md).
+    Creates `IDateProvider` abstract class (doubles as DI token), `DateProvider` real implementation,
+    `FakeDateProvider` test fake, and `{SHARED_ROOT}/date/index.ts` barrel.
+
 9. **TypedCommandBus** — `{SHARED_ROOT}/cqrs/typed-command-bus.ts`
    Load [references/typed-command-bus.md](references/typed-command-bus.md).
 
@@ -83,13 +101,15 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
     Add both exports to `{SHARED_ROOT}/interceptors/index.ts` (see reference file).
 
 15. **Update `src/app.module.ts`**
-    Add `AppLoggerModule`, `PrismaModule` to `imports`, and the interceptors to `providers`:
+    Add `AppLoggerModule`, `PrismaModule` to `imports`, and the interceptors + `DateProvider` to `providers`:
     ```ts
     import { APP_INTERCEPTOR } from "@nestjs/core";
     import { AppLoggerModule } from "./shared/logger/app-logger.module";
     import { PrismaModule } from "./shared/prisma/prisma.module";
     import { CqrsInterceptor } from "./shared/interceptors/cqrs.interceptor";
     import { LoggingInterceptor } from "./shared/interceptors/logging.interceptor";
+    import { IDateProvider } from "./shared/date/date-provider";
+    import { DateProvider } from "./shared/date/date-provider.impl";
 
     @Module({
       imports: [
@@ -100,6 +120,7 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
       providers: [
         CqrsInterceptor,
         { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+        { provide: IDateProvider, useClass: DateProvider },
       ],
     })
     export class AppModule {}
@@ -127,3 +148,4 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for the `{SHARED_ROOT
 - `BaseFeatureExceptionFilter` uses Fastify types (`FastifyRequest`, `FastifyReply`) — requires `@nestjs/platform-fastify`.
 - `validateEnv` is a helper only — the project-specific env schema lives in `src/config/env.ts`, created by `/api-init-project`.
 - `PrismaService` requires `@prisma/client` — installed by `/api-init-project` (or run `npm i @prisma/client` + `npx prisma init`).
+- `DateProvider` requires `date-fns` for date manipulation in consuming code — installed by `/api-init-project`.
