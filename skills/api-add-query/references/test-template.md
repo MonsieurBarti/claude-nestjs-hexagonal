@@ -1,6 +1,6 @@
 # Query integration test templates
 
-File: `application/queries/{query-name}/{query-name}.query.spec.ts`
+File: `application/queries/{query-name}/{query-name}.query.integration.spec.ts`
 
 **Prerequisites** (one-time project setup — not part of this skill):
 - `@testcontainers/postgresql` installed
@@ -8,6 +8,8 @@ File: `application/queries/{query-name}/{query-name}.query.spec.ts`
 - Docker available (local and CI)
 
 **Scope**: each test boots only the **feature module** (`XxxModule`) — which must import `PrismaModule` explicitly in its own `imports` array. These tests cover Prisma query correctness and response shape. Input validation (400 cases) belongs in controller tests, not here.
+
+**Important (Prisma v7)**: `process.env.DATABASE_URL` must be set **before** NestJS instantiates `PrismaService`, because the adapter reads the connection string at construction time.
 
 ---
 
@@ -36,9 +38,16 @@ describe("GET /xxx/:id (integration)", () => {
 
   beforeAll(async () => {
     container = await new PostgreSqlContainer("postgres:16").start();
-    process.env.DATABASE_URL = container.getConnectionUri();
+    const databaseUrl = container.getConnectionUri();
 
-    execSync("npx prisma migrate deploy", { stdio: "inherit" });
+    // IMPORTANT: set DATABASE_URL BEFORE NestJS creates PrismaService
+    // (Prisma v7 adapter reads connectionString at construction time)
+    process.env.DATABASE_URL = databaseUrl;
+
+    // Push schema to test database (use --url to override prisma.config.ts)
+    execSync(`pnpm prisma db push --url "${databaseUrl}"`, {
+      cwd: process.cwd(),
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [TestLoggerModule, XxxModule], // XxxModule imports PrismaModule in its own imports array
@@ -53,11 +62,12 @@ describe("GET /xxx/:id (integration)", () => {
     await app.getHttpAdapter().getInstance().ready();
 
     prisma = module.get(PrismaService);
-  }, 120_000); // allow time for container startup + migrations
+  }, 120_000); // allow time for container startup + schema push
 
   afterAll(async () => {
-    await app.close();
-    await container.stop();
+    await prisma?.$disconnect();
+    await app?.close();
+    await container?.stop();
   });
 
   beforeEach(async () => {
@@ -113,9 +123,14 @@ describe("GET /xxx (paginated integration)", () => {
 
   beforeAll(async () => {
     container = await new PostgreSqlContainer("postgres:16").start();
-    process.env.DATABASE_URL = container.getConnectionUri();
+    const databaseUrl = container.getConnectionUri();
 
-    execSync("npx prisma migrate deploy", { stdio: "inherit" });
+    // IMPORTANT: set DATABASE_URL BEFORE NestJS creates PrismaService
+    process.env.DATABASE_URL = databaseUrl;
+
+    execSync(`pnpm prisma db push --url "${databaseUrl}"`, {
+      cwd: process.cwd(),
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [TestLoggerModule, XxxModule], // XxxModule imports PrismaModule in its own imports array
@@ -133,8 +148,9 @@ describe("GET /xxx (paginated integration)", () => {
   }, 120_000);
 
   afterAll(async () => {
-    await app.close();
-    await container.stop();
+    await prisma?.$disconnect();
+    await app?.close();
+    await container?.stop();
   });
 
   beforeEach(async () => {
@@ -184,3 +200,10 @@ describe("ListXxxQuery pagination math", () => {
   });
 });
 ```
+
+## Notes
+
+- **File naming**: use `.integration.spec.ts` suffix so vitest's `integration` project picks it up (not the `unit` project).
+- **Prisma v7**: use `pnpm prisma db push --url "..."` instead of `npx prisma migrate deploy`. The `--url` flag overrides `prisma.config.ts`. The old `--skip-generate` flag was removed in v7.
+- **DATABASE_URL timing**: set `process.env.DATABASE_URL` before `Test.createTestingModule()` — `PrismaService` reads it in its constructor via the adapter.
+- **Cleanup**: use `prisma?.$disconnect()` and `container?.stop()` with optional chaining in `afterAll` to avoid errors if `beforeAll` failed partway through.

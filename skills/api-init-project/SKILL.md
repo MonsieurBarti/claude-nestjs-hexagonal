@@ -63,7 +63,7 @@ One-time bootstrap for a new NestJS hexagonal project. Run this before `/api-set
 
 4. **Install production dependencies**
    ```bash
-   pnpm add @nestjs/cqrs @nestjs/platform-fastify fastify @fastify/static nestjs-pino pino-http pino-pretty zod @prisma/client @nestjs/swagger date-fns
+   pnpm add @nestjs/cqrs @nestjs/platform-fastify fastify @fastify/static nestjs-pino pino-http pino-pretty zod @prisma/client @prisma/adapter-pg @nestjs/swagger date-fns
    ```
 
 5. **Install dev dependencies**

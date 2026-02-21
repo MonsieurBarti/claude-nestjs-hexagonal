@@ -45,9 +45,13 @@ export class XxxCommandHandler implements ICommandHandler<XxxCommand, void> {
 }
 ```
 
-## Optional: logger injection
+## Optional: logger injection (rarely needed)
 
-If `BaseLogger` is available (see `/api-setup-shared`), add to imports and constructor:
+**In most cases, do NOT inject a logger into command handlers.** The `CqrsInterceptor` (created by `/api-setup-shared`) already logs every command and query execution automatically with correlationId, timing, and error details.
+
+Only inject a logger when the handler needs to log **domain-specific context** that the interceptor can't capture (e.g., external API call results, complex branching decisions).
+
+If truly needed, add to imports and constructor:
 
 ```ts
 import { InjectLogger } from "{SHARED_ROOT}/logger/inject-logger.decorator";
