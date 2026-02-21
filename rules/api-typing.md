@@ -1,5 +1,5 @@
 ---
-description: Global TypeScript typing conventions — strict mode, no `any` type, no `enum` keyword
+description: Global TypeScript typing conventions — strict mode, no `any` type, no `enum` keyword, no `as` casting
 globs:
   - "**/*.ts"
 ---
@@ -76,12 +76,6 @@ Alternatives:
   }
   ```
 
-- **`as unknown as TargetType`** — last resort when two concrete types are structurally compatible at runtime but TypeScript can't prove it. Always add a comment explaining why:
-  ```ts
-  // FastifyRequest is guaranteed by the platform adapter — safe downcast at runtime
-  const req = rawRequest as unknown as FastifyRequest;
-  ```
-
 ## No TypeScript `enum`
 
 The `enum` keyword is **prohibited**. Use `z.enum()` instead — it is the single source of truth for both runtime validation and the TypeScript type.
@@ -124,8 +118,59 @@ TypeScript allows a `type` and a `const` to share the same name in the same file
 import type { OrderStatus } from "./order-status";
 ```
 
+## No `as` casting
+
+Type assertions (`as`) are **prohibited in all forms** — including `as unknown as T`. They bypass the type system and hide bugs that generics, type guards, or `satisfies` would catch at compile time.
+
+```ts
+// ❌ All prohibited
+const req = rawRequest as FastifyRequest;
+const id = value as string;
+const user = data as unknown as User;
+const config = {} as AppConfig;
+```
+
+Alternatives:
+
+- **`satisfies`** — validates that a value conforms to a type without widening:
+  ```ts
+  const config = {
+    port: 3000,
+    host: "localhost",
+  } satisfies AppConfig;
+  ```
+
+- **Type guards** — narrow types at runtime with full type safety:
+  ```ts
+  function isFastifyRequest(req: unknown): req is FastifyRequest {
+    return typeof req === "object" && req !== null && "raw" in req;
+  }
+  ```
+
+- **Generics** — let TypeScript infer or constrain the type:
+  ```ts
+  function getRepository<T>(token: symbol): T {
+    return module.get<T>(token);
+  }
+  ```
+
+- **`z.infer<>`** — derive types from Zod schemas instead of casting parsed results:
+  ```ts
+  const result = schema.parse(input); // already typed as z.infer<typeof schema>
+  ```
+
+- **Function overloads** — provide multiple call signatures instead of casting return types:
+  ```ts
+  function parse(input: string): number;
+  function parse(input: string[]): number[];
+  function parse(input: string | string[]): number | number[] {
+    return Array.isArray(input) ? input.map(Number) : Number(input);
+  }
+  ```
+
 ## Prohibited
 
 - `any` in any form — type annotations (`: any`), casts (`as any`), generics (`Array<any>`, `Record<string, any>`); Biome enforces `noExplicitAny` as an error
+- `as` in any form — type assertions (`as X`), double casts (`as unknown as X`), const assertions (`as const` is the sole exception, allowed for literal types)
 - `enum` keyword — use `z.enum([...])` + `.enum` instead
 - `// @ts-ignore` and `// @ts-expect-error` — fix the root cause rather than silencing the compiler

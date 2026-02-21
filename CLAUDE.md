@@ -63,8 +63,9 @@ MODULE_ROOT: src/modules
 | Domain errors           | `extends BaseDomainError`, `reportToMonitoring: false` (user) or `true` (system) |
 | Commands                | `extends TypedCommand<void>` — never return data                                 |
 | Queries                 | `extends TypedQuery<TResult>` — no side effects                                  |
-| No `any`                | The `any` type is prohibited in all forms — use `z.infer<>`, generics, `unknown` + narrowing, or `as unknown as T` (last resort) |
+| No `any`                | The `any` type is prohibited in all forms — use `z.infer<>`, generics, `unknown` + narrowing |
 | No `enum`               | Use `z.enum([...])` — derive type with `z.infer<>`, access values via `.enum`    |
+| No `as` casting         | Type assertions (`as X`, `as unknown as X`) are prohibited — use generics, type guards, or `satisfies` (`as const` is allowed) |
 | Domain events           | `extends DomainEvent`, published by repository after write, NOT by handler       |
 | AggregateRoot           | Entities with events `extends AggregateRoot` — `this.apply(event)` in business methods |
 
