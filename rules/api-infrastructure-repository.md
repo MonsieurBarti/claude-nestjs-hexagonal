@@ -70,6 +70,19 @@ Same pattern: implement the publisher interface, capture published events, expos
 - `hasPublishedEvent(predicate): boolean`
 - `clear(): void`
 
+## SqlRepositoryBase (entities with domain events)
+
+- Extend `SqlRepositoryBase<Entity, DbRecord>` from `{SHARED_ROOT}/db/sql-repository.base`
+- Inject `PrismaService` + `EventBus` in constructor, pass to `super()`
+- Override `getDelegate()` to return the Prisma delegate (e.g., `this.prisma.user`)
+- Override `mapper` with an instance implementing `EntityMapper<E, R>`
+- Inherit: `save()`, `findById()`, `delete()` — add only custom queries
+- Events auto-publish after successful writes — do NOT call `commit()` in handlers
+
+## In-memory repos for AggregateRoot entities
+
+- Call `entity.uncommit()` after save to clear collected events (mirrors real repo)
+
 ## Prohibited
 
 - **No business logic** in repositories or mappers

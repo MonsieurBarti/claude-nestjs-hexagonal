@@ -53,6 +53,15 @@ Applies to every file under `**/domain/`.
 - Semantic preset methods: `asActiveEntity()`, `asExpiredEntity()`, etc.
 - Method `build(): Entity` and optionally `buildProps(): EntityProps`
 
+## Entities with domain events
+
+- Extend `AggregateRoot` from `@nestjs/cqrs` + call `super()` in constructor
+- Use `this.apply(new XxxEvent(...))` in creation factories + business methods
+- `create()` (reconstitution from DB) does NOT emit events
+- `createNew()` (new entity) DOES emit events
+- Events are collected internally, published by the repository after DB write
+- Domain events live in `domain/events/` — see `api-domain-event` rule
+
 ## Prohibited
 
 - No imports from `infrastructure/`, `application/`, or `presentation/`

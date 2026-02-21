@@ -18,6 +18,12 @@ Applies to every `*.command.ts` file. Shared CQRS invariants (props naming, corr
 - **No data returned** — if the caller needs data, create a separate query
 - **No presentation logic** (DTO transformation, HTTP status codes) in the handler
 
+## Domain events in commands
+
+- Do NOT manually publish events — the repository handles this after `save()`
+- Do NOT inject `EventBus` or `EventPublisher` in command handlers
+- Entity mutations via business methods automatically collect events via `this.apply()`
+
 ## File structure
 
 ```ts
