@@ -36,6 +36,7 @@ MODULE_ROOT: src/modules
 │   ├── {aggregate}/{aggregate}.ts
 │   ├── {aggregate}/{aggregate}.repository.ts
 │   ├── {aggregate}/{aggregate}.builder.ts     # tests only
+│   ├── events/{entity}-{action}.event.ts     # domain events
 │   └── errors/{module}-base.error.ts
 ├── infrastructure/
 │   ├── {aggregate}/sql-{aggregate}.repository.ts
@@ -64,6 +65,8 @@ MODULE_ROOT: src/modules
 | Queries                 | `extends TypedQuery<TResult>` — no side effects                                  |
 | No `any`                | The `any` type is prohibited in all forms — use `z.infer<>`, generics, `unknown` + narrowing, or `as unknown as T` (last resort) |
 | No `enum`               | Use `z.enum([...])` — derive type with `z.infer<>`, access values via `.enum`    |
+| Domain events           | `extends DomainEvent`, published by repository after write, NOT by handler       |
+| AggregateRoot           | Entities with events `extends AggregateRoot` — `this.apply(event)` in business methods |
 
 ## Available skills
 
@@ -72,6 +75,7 @@ MODULE_ROOT: src/modules
 - `/api-add-domain-entity` — entity + repository + builder + infra
 - `/api-add-command` — command + handler + in-memory test
 - `/api-add-query` — query + handler + in-memory test
+- `/api-add-event-handler` — domain event handler + test
 - `/api-add-module` — full module scaffold (4 layers)
 
 ## Rules reference
@@ -84,4 +88,6 @@ Per-layer constraints auto-load when editing matching files — links for quick 
 - [api-query](rules/api-query.md) — `*.query.ts`
 - [api-domain-entity](rules/api-domain-entity.md) — `**/domain/**/*.ts`
 - [api-infrastructure-repository](rules/api-infrastructure-repository.md) — `**/infrastructure/**/*.ts`
+- [api-domain-event](rules/api-domain-event.md) — `**/*.event.ts` domain event conventions
+- [api-event-handler](rules/api-event-handler.md) — `**/*.event-handler.ts` event handler conventions
 - [api-presentation](rules/api-presentation.md) — `**/presentation/**/*.ts`
