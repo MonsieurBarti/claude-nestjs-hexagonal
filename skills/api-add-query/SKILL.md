@@ -14,6 +14,13 @@ Creates `{query-name}.query.ts` (query + handler) and `{query-name}.query.spec.t
 
 Read the `## Configuration` section in `.claude/CLAUDE.md` for `{SHARED_ROOT}` and `{MODULE_ROOT}`.
 
+## Prerequisites
+
+Run these skills first (in order):
+1. `/api-init-project` — project scaffold
+2. `/api-setup-shared` — shared base classes (`TypedQuery`, `PaginatedQueryBase`, `PrismaService`, etc.)
+3. `/api-add-module` — module scaffold (must import `PrismaModule` in application module)
+
 ## Steps
 
 1. **Choose variant** — standard (single item or flat list) vs paginated (list with pagination).

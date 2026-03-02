@@ -32,9 +32,51 @@ export class SqlXxxRepository implements IXxxRepository {
 
 ## Mappers
 
-- Static class with `toDomain(raw: PrismaXxx): Xxx` and `toPersistence(entity: Xxx): PrismaXxx`
+Two variants — choose based on entity type:
+
+### Static mapper (standard entities)
+
+Use when the repository is a standalone class (not extending `SqlRepositoryBase`):
+
+```ts
+export class SqlXxxMapper {
+  public static toDomain(raw: PrismaXxx): Xxx {
+    return Xxx.create({ id: raw.id, name: raw.name });
+  }
+
+  public static toPersistence(entity: Xxx): PrismaXxx {
+    const props = entity.toJSON();
+    return { id: props.id, name: props.name };
+  }
+}
+```
+
+Called as: `SqlXxxMapper.toDomain(raw)` / `SqlXxxMapper.toPersistence(entity)`
+
+### Instance mapper (AggregateRoot entities)
+
+Use when the repository extends `SqlRepositoryBase<E, R>` — the base class requires a `mapper` property implementing `EntityMapper<E, R>`:
+
+```ts
+export class SqlXxxMapper implements EntityMapper<Xxx, PrismaXxxRecord> {
+  public toDomain(raw: PrismaXxxRecord): Xxx {
+    return Xxx.create({ id: raw.id, name: raw.name });
+  }
+
+  public toPersistence(entity: Xxx): PrismaXxxRecord {
+    const props = entity.toJSON();
+    return { id: props.id, name: props.name };
+  }
+}
+```
+
+Assigned as: `protected readonly mapper = new SqlXxxMapper();` in the repository class.
+
+### Shared rules
+
 - No business logic in mappers — structural conversion only
 - Handle `snake_case` (Prisma) → `camelCase` (domain) in `toDomain`
+- Use generated Prisma types: `import type { Xxx as PrismaXxxRecord } from "@prisma/client"`
 
 ## In-memory implementations (tests)
 

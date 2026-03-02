@@ -14,6 +14,7 @@ Applies to every `*.query.ts` file. Shared CQRS invariants (props naming, correl
 - **`@Injectable()`** — required decorator on the query handler
 - **No side effects** — queries read only, they never mutate state
 - **Bypass domain and repository layers** — handlers inject `PrismaService` directly and query the database without going through the domain or any repository abstraction
+- **Explicit `select` clause** — every Prisma query must use `select` to project only the fields needed by the read model. Never omit `select` — without it, the full DB record is returned, which may leak sensitive fields (passwords, tokens, internal metadata)
 - **Return read models** — plain typed objects (`XxxReadModel`), not domain entities and not DTO class instances. The read model type is defined in the same query file.
 
 ## Two variants
@@ -137,3 +138,4 @@ export const queryHandlers = [XxxQueryHandler];
 - **No domain entities returned** — return read models (plain typed objects)
 - **No DTO class instances returned** — read models are plain types, not class instances
 - **No `vi.fn()` mocks of PrismaService** — use integration tests against a real database
+- **No Prisma query without `select`** — always project explicitly to prevent data leaks

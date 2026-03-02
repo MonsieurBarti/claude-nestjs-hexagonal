@@ -52,6 +52,26 @@ export class DoSomethingWhenXxxCreatedHandler
 - Import the event class directly from the source module's domain layer
 - The handler module does NOT need to import the source module
 
+## Cache invalidation
+
+Cache invalidation is the responsibility of event handlers — never command handlers or query handlers. This keeps the write path clean and ensures caches are only invalidated when data is actually persisted.
+
+```ts
+@EventsHandler(OrderCreatedEvent)
+export class InvalidateCacheWhenOrderCreatedHandler
+  implements IEventHandler<OrderCreatedEvent>
+{
+  constructor(
+    @Inject(TOKENS.CACHE_SERVICE)
+    private readonly cacheService: ICacheService,
+  ) {}
+
+  async handle(event: OrderCreatedEvent): Promise<void> {
+    await this.cacheService.invalidate(`orders:${event.aggregateId}`);
+  }
+}
+```
+
 ## Prohibited
 
 - No HTTP/presentation logic — event handlers are application layer only

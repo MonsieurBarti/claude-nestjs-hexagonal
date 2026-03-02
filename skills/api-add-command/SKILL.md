@@ -13,6 +13,14 @@ Creates `{command-name}.command.ts` (command + handler) and `{command-name}.comm
 
 Read the `## Configuration` section in `.claude/CLAUDE.md` for `{SHARED_ROOT}` and `{MODULE_ROOT}`.
 
+## Prerequisites
+
+Run these skills first (in order):
+1. `/api-init-project` — project scaffold
+2. `/api-setup-shared` — shared base classes (`TypedCommand`, `BaseDomainError`, etc.)
+3. `/api-add-module` — module scaffold (tokens, errors, controller)
+4. `/api-add-domain-entity` — entity, repository, builder, in-memory repo
+
 ## Steps
 
 1. **Create folder** — `application/commands/{command-name}/`

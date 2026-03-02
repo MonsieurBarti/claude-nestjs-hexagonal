@@ -36,6 +36,8 @@ MODULE_ROOT: src/modules
 │   ├── {aggregate}/{aggregate}.ts
 │   ├── {aggregate}/{aggregate}.repository.ts
 │   ├── {aggregate}/{aggregate}.builder.ts     # tests only
+│   ├── value-objects/{name}.value-object.ts  # value objects
+│   ├── services/{name}.service.ts            # domain services
 │   ├── events/{entity}-{action}.event.ts     # domain events
 │   └── errors/{module}-base.error.ts
 ├── infrastructure/
@@ -68,16 +70,27 @@ MODULE_ROOT: src/modules
 | No `as` casting         | Type assertions (`as X`, `as unknown as X`) are prohibited — use generics, type guards, or `satisfies` (`as const` is allowed) |
 | Domain events           | `extends DomainEvent`, published by repository after write, NOT by handler       |
 | AggregateRoot           | Entities with events `extends AggregateRoot` — `this.apply(event)` in business methods |
+| Aggregate boundaries    | Only root referenced externally, inner entities via root, cross-aggregate refs by ID only |
+| Value objects           | Immutable, no identity, `equals()` by attributes, replace primitives with rich types |
+| No anemic model         | Business logic in entity methods — handlers only orchestrate (fetch, call, save) |
+| No command chains       | `Command → Event → Command` — never chain `CommandBus.execute()` in handlers |
+| Domain services         | Stateless, multi-aggregate logic, lives in domain layer, no infrastructure imports |
+| Integration events      | Published by event handlers after DB commit, minimal payloads (IDs only) |
+| No domain libs          | No external libraries in domain except `zod`, `decimal.js`, `node:crypto` |
 
 ## Available skills
 
-- `/api-init-project` — bootstrap a new NestJS project (run before all other skills)
-- `/api-setup-shared` — create all shared base classes (run first on a new project)
-- `/api-add-domain-entity` — entity + repository + builder + infra
-- `/api-add-command` — command + handler + in-memory test
-- `/api-add-query` — query + handler + in-memory test
-- `/api-add-event-handler` — domain event handler + test
-- `/api-add-module` — full module scaffold (4 layers)
+Run in this order for a new project:
+
+1. `/api-init-project` — bootstrap a new NestJS project
+2. `/api-setup-shared` — create all shared base classes
+3. `/api-add-module` — full module scaffold (4 layers)
+4. `/api-add-domain-entity` — entity + repository + builder + infra
+5. `/api-add-command` — command + handler + in-memory test
+6. `/api-add-query` — query + handler + integration test
+7. `/api-add-event-handler` — domain event handler + test
+8. `/api-add-endpoint` — add HTTP endpoint to existing controller + DTOs
+9. `/api-add-domain-error` — add domain error + exception filter mapping
 
 ## Rules reference
 
@@ -86,9 +99,16 @@ Per-layer constraints auto-load when editing matching files — links for quick 
 - [api-typing](rules/api-typing.md) — `**/*.ts` global typing conventions (no `any`, no `enum`)
 - [api-cqrs-shared](rules/api-cqrs-shared.md) — `*.command.ts` + `*.query.ts` shared invariants
 - [api-command](rules/api-command.md) — `*.command.ts`
-- [api-query](rules/api-query.md) — `*.query.ts`
-- [api-domain-entity](rules/api-domain-entity.md) — `**/domain/**/*.ts`
-- [api-infrastructure-repository](rules/api-infrastructure-repository.md) — `**/infrastructure/**/*.ts`
+- [api-query](rules/api-query.md) — `*.query.ts` (includes mandatory `select` clause)
+- [api-domain-entity](rules/api-domain-entity.md) — `**/domain/**/*.ts` (includes Decimal.js guidance)
+- [api-infrastructure-repository](rules/api-infrastructure-repository.md) — `**/infrastructure/**/*.ts` (static vs instance mapper)
 - [api-domain-event](rules/api-domain-event.md) — `**/*.event.ts` domain event conventions
 - [api-event-handler](rules/api-event-handler.md) — `**/*.event-handler.ts` event handler conventions
 - [api-presentation](rules/api-presentation.md) — `**/presentation/**/*.ts`
+- [api-value-object](rules/api-value-object.md) — `**/domain/**/*.ts` value object conventions
+- [api-domain-error](rules/api-domain-error.md) — `**/*.error.ts` domain error hierarchy
+- [api-domain-service](rules/api-domain-service.md) — `**/domain/services/**/*.ts` domain services
+- [api-integration-event](rules/api-integration-event.md) — `**/*.integration-event.ts` cross-service events
+- [api-testing](rules/api-testing.md) — `**/*.spec.ts` + `**/*.integration.spec.ts` test conventions
+- [api-dto](rules/api-dto.md) — `**/presentation/dto/*.ts` DTO conventions
+- [api-module-wiring](rules/api-module-wiring.md) — `**/*.module.ts` module composition

@@ -13,6 +13,14 @@ Creates a domain event handler in the application layer. Event handlers react to
 
 Read the `## Configuration` section in `.claude/CLAUDE.md` for `{SHARED_ROOT}` and `{MODULE_ROOT}`.
 
+## Prerequisites
+
+Run these skills first (in order):
+1. `/api-init-project` — project scaffold
+2. `/api-setup-shared` — shared base classes (`DomainEvent`, `IDateProvider`, etc.)
+3. `/api-add-module` — module scaffold (application module with `CqrsModule`)
+4. `/api-add-domain-entity` (with AggregateRoot) — creates the domain events this handler reacts to
+
 ## Steps
 
 1. **Create handler** — `application/event-handlers/{action}-when-{event}.event-handler.ts`
