@@ -26,11 +26,76 @@ Read the `## Configuration` section in `.claude/CLAUDE.md` for `{SHARED_ROOT}` a
    - **System error** → `reportToMonitoring: true` — data inconsistency, external service failure, bugs (5xx)
 
 2. **Create error class** — append to `domain/errors/{module}.errors.ts`
-   Load [references/error-template.md](references/error-template.md).
    - Extend the module base error
    - `errorCode` in `SCREAMING_SNAKE_CASE`: `{MODULE}_{ENTITY}_{TYPE}` (e.g., `USER_EMAIL_ALREADY_EXISTS`)
    - Include `correlationId` and relevant IDs in constructor options
    - Include useful context in `metadata`
+
+   **User error template (reportToMonitoring: false):**
+   ```ts
+   export class {Entity}NotFoundError extends {Module}Error {
+     readonly errorCode = "{MODULE_UPPER}_{ENTITY_UPPER}_NOT_FOUND";
+     constructor(options: { correlationId?: string; {entity}Id: string }) {
+       super(`{Entity} ${options.{entity}Id} not found`, {
+         reportToMonitoring: false,
+         correlationId: options.correlationId,
+         metadata: { {entity}Id: options.{entity}Id },
+       });
+     }
+   }
+   ```
+
+   **Conflict error template:**
+   ```ts
+   export class {Entity}AlreadyExistsError extends {Module}Error {
+     readonly errorCode = "{MODULE_UPPER}_{ENTITY_UPPER}_ALREADY_EXISTS";
+     constructor(options: { correlationId?: string; {uniqueField}: string }) {
+       super(`{Entity} with {uniqueField} ${options.{uniqueField}} already exists`, {
+         reportToMonitoring: false,
+         correlationId: options.correlationId,
+         metadata: { {uniqueField}: options.{uniqueField} },
+       });
+     }
+   }
+   ```
+
+   **Invalid state error template:**
+   ```ts
+   export class {Entity}InvalidStateError extends {Module}Error {
+     readonly errorCode = "{MODULE_UPPER}_{ENTITY_UPPER}_INVALID_STATE";
+     constructor(options: { correlationId?: string; {entity}Id: string; currentState: string; attemptedAction: string }) {
+       super(`Cannot ${options.attemptedAction} {entity} ${options.{entity}Id} in state ${options.currentState}`, {
+         reportToMonitoring: false,
+         correlationId: options.correlationId,
+         metadata: { {entity}Id: options.{entity}Id, currentState: options.currentState, attemptedAction: options.attemptedAction },
+       });
+     }
+   }
+   ```
+
+   **System error template (reportToMonitoring: true):**
+   ```ts
+   export class {Entity}DataInconsistencyError extends {Module}Error {
+     readonly errorCode = "{MODULE_UPPER}_{ENTITY_UPPER}_DATA_INCONSISTENCY";
+     constructor(options: { correlationId?: string; {entity}Id: string; details: string }) {
+       super(`Data inconsistency for {entity} ${options.{entity}Id}: ${options.details}`, {
+         reportToMonitoring: true,
+         correlationId: options.correlationId,
+         metadata: { {entity}Id: options.{entity}Id, details: options.details },
+       });
+     }
+   }
+   ```
+
+   **Exception filter mapping (add to `mapErrorToStatus()`):**
+   ```ts
+   // System errors FIRST (500)
+   if (error instanceof {Entity}DataInconsistencyError) return HttpStatus.INTERNAL_SERVER_ERROR;
+   // User errors
+   if (error instanceof {Entity}NotFoundError) return HttpStatus.NOT_FOUND;
+   if (error instanceof {Entity}AlreadyExistsError) return HttpStatus.CONFLICT;
+   if (error instanceof {Entity}InvalidStateError) return HttpStatus.UNPROCESSABLE_ENTITY;
+   ```
 
 3. **Update barrel export** — ensure `domain/errors/index.ts` re-exports the errors file
 

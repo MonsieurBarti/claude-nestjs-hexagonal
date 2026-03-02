@@ -96,6 +96,7 @@ Run in this order for a new project:
 
 Per-layer constraints auto-load when editing matching files — links for quick access:
 
+- [api-hexagonal-isolation](rules/api-hexagonal-isolation.md) — `**/*.ts` layer dependency rule enforcement
 - [api-typing](rules/api-typing.md) — `**/*.ts` global typing conventions (no `any`, no `enum`)
 - [api-cqrs-shared](rules/api-cqrs-shared.md) — `*.command.ts` + `*.query.ts` shared invariants
 - [api-command](rules/api-command.md) — `*.command.ts`
@@ -112,3 +113,5 @@ Per-layer constraints auto-load when editing matching files — links for quick 
 - [api-testing](rules/api-testing.md) — `**/*.spec.ts` + `**/*.integration.spec.ts` test conventions
 - [api-dto](rules/api-dto.md) — `**/presentation/dto/*.ts` DTO conventions
 - [api-module-wiring](rules/api-module-wiring.md) — `**/*.module.ts` module composition
+- [api-graphql-presentation](rules/api-graphql-presentation.md) — `**/*.resolver.ts` GraphQL resolvers
+- [api-multi-tenancy](rules/api-multi-tenancy.md) — `**/*.ts` multi-tenant DI and data isolation
